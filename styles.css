@@ -157,7 +157,7 @@ body {
     border: none;
     border-radius: 5px;
     font-size: 1rem;
-    font-weight: 700;
+    font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 1px;
     cursor: pointer;
@@ -168,13 +168,13 @@ body {
 
 .cta-button {
     background-color: var(--gold);
-    color: var(--dark-green);
+    color: #000000;
     border: 3px solid var(--gold);
 }
 
 .cta-button:hover {
     background-color: var(--dark-green);
-    color: var(--gold);
+    color: #000000;
 }
 
 .secondary-button {
@@ -186,16 +186,16 @@ body {
 
 .secondary-button:hover {
     background-color: var(--gold);
-    color: var(--dark-green);
+    color: #000000;
 }
 
 .cta-button-small {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
     background-color: var(--gold);
-    color: var(--dark-green);
+    color: #000000;
     border: 2px solid var(--gold);
-    font-weight: 700;
+    font-weight: 900;
 }
 
 .hero-visual {
@@ -428,13 +428,13 @@ tr:last-child td {
 
 .join-card .cta-button {
     background-color: var(--gold);
-    color: var(--dark-green);
+    color: #000000;
     border: none;
 }
 
 .join-card .cta-button:hover {
     background-color: var(--dark-green);
-    color: var(--gold);
+    color: #000000;
 }
 
 .footer {
