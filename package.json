@@ -1,0 +1,20 @@
+{
+  "name": "audit-army",
+  "version": "1.0.0",
+  "description": "A military-themed MVP for a DAO-powered business auditing platform",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "dao",
+    "auditing",
+    "blockchain",
+    "veterans",
+    "military"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {}
+}
