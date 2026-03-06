@@ -23,6 +23,7 @@ body {
     background-color: var(--off-white);
     color: var(--dark-gray);
     line-height: 1.6;
+    font-weight: 500;
 }
 
 .container {
@@ -156,7 +157,7 @@ body {
     border: none;
     border-radius: 5px;
     font-size: 1rem;
-    font-weight: bold;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
     cursor: pointer;
@@ -180,6 +181,7 @@ body {
     background-color: transparent;
     color: var(--gold);
     border: 3px solid var(--gold);
+    font-weight: 700;
 }
 
 .secondary-button:hover {
@@ -193,6 +195,7 @@ body {
     background-color: var(--gold);
     color: var(--dark-green);
     border: 2px solid var(--gold);
+    font-weight: 700;
 }
 
 .hero-visual {
