@@ -1,20 +1,42 @@
 {
-  "name": "audit-army",
+  "name": "audit-army-monorepo",
   "version": "1.0.0",
-  "description": "A military-themed MVP for a DAO-powered business auditing platform",
-  "main": "index.html",
-  "scripts": {
-    "start": "python3 -m http.server 8000",
-    "dev": "python3 -m http.server 8000"
-  },
-  "keywords": [
-    "dao",
-    "auditing",
-    "blockchain",
-    "veterans",
-    "military"
+  "description": "Audit Army - Create Your Own Review DAOs",
+  "private": true,
+  "workspaces": [
+    "shared-types"
   ],
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {}
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run start:dev",
+    "test": "concurrently \"npm run test:frontend\" \"npm run test:backend\" \"npm run test:contracts\"",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && npm test",
+    "test:contracts": "cd contracts && forge test",
+    "lint": "concurrently \"npm run lint:frontend\" \"npm run lint:backend\"",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "format": "prettier --write \"**/*.{js,ts,tsx,jsx,sol,json,md}\"",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "prettier-plugin-solidity": "^1.3.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,jsx}": [
+      "eslint --fix"
+    ],
+    "*.{js,ts,tsx,jsx,sol,json,md}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
 }
