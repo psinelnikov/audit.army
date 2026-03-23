@@ -1,32 +1,29 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { DaoFactoryService } from './dao-factory.service';
-import { ethers } from 'ethers';
 
 class CreateDAODto {
   name: string;
   symbol: string;
   initialReviewers: string[];
   description: string;
-  privateKey: string;
+  walletAddress: string;
 }
 
 @Controller('api/dao')
 export class DaoController {
   constructor(private readonly daoFactoryService: DaoFactoryService) {}
 
-  @Post('create')
-  async createDAO(@Body() createDAODto: CreateDAODto) {
+  @Post('prepare-transaction')
+  async prepareCreateDAOTx(@Body() createDAODto: CreateDAODto) {
     try {
-      const { name, symbol, initialReviewers, description, privateKey } = createDAODto;
+      const { name, symbol, initialReviewers, description, walletAddress } = createDAODto;
 
-      const signer = new ethers.Wallet(privateKey);
-
-      const result = await this.daoFactoryService.createDAO(
+      const result = await this.daoFactoryService.prepareCreateDAOTransaction(
         name,
         symbol,
         initialReviewers,
         description,
-        signer
+        walletAddress
       );
 
       return {
@@ -64,22 +61,6 @@ export class DaoController {
       return {
         success: true,
         data: { daos }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  @Get('count')
-  async getDAOCount() {
-    try {
-      const count = await this.daoFactoryService.getDAOCount();
-      return {
-        success: true,
-        data: { count }
       };
     } catch (error) {
       return {

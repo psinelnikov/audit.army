@@ -24,29 +24,36 @@ export class ReviewSubmissionService {
     this.logger.log(`Review Submission initialized at ${reviewAddress}`);
   }
 
-  async submitReview(
+  /**
+   * Prepare unsigned transaction for frontend to sign
+   */
+  async prepareSubmitReviewTransaction(
     auditId: string,
     ipfsHash: string,
-    signer: ethers.Signer
-  ): Promise<{ txHash: string; reviewId: string }> {
+    fromAddress: string
+  ): Promise<{ to: string; data: string; from: string; value: string }> {
     try {
-      this.logger.log(`Submitting review for audit: ${auditId}`);
+      this.logger.log(`Preparing review submission transaction for: ${fromAddress}`);
 
-      const submissionWithSigner = this.reviewSubmission.connect(signer);
-      const tx = await submissionWithSigner.submitReview(auditId, ipfsHash);
+      const submission = new ethers.Contract(
+        process.env.REVIEW_SUBMISSION_ADDRESS!,
+        ReviewSubmissionABI.abi,
+        this.provider
+      );
 
-      this.logger.log(`Review submission transaction sent: ${tx.hash}`);
+      const txData = await submission.submitReview.populateTransaction(
+        auditId,
+        ipfsHash
+      );
 
-      await tx.wait();
-
-      this.logger.log(`Review submitted successfully`);
-
-      const reviewCount = await this.reviewSubmission.getReviewCount();
-      const reviewId = Number(reviewCount);
-
-      return { txHash: tx.hash, reviewId: reviewId.toString() };
+      return {
+        to: process.env.REVIEW_SUBMISSION_ADDRESS!,
+        data: txData.data || '0x',
+        from: fromAddress,
+        value: '0x0'
+      };
     } catch (error) {
-      this.logger.error(`Error submitting review: ${error.message}`, error.stack);
+      this.logger.error(`Error preparing review transaction: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -91,3 +98,4 @@ export class ReviewSubmissionService {
     }
   }
 }
+

@@ -20,34 +20,42 @@ export class AuditEscrowService {
     this.logger.log(`Audit Escrow initialized at ${escrowAddress}`);
   }
 
-  async createAudit(
+  /**
+   * Prepare unsigned transaction for frontend to sign
+   */
+  async prepareCreateAuditTransaction(
     daoAddress: string,
     ipfsHash: string,
     amount: string,
-    signer: ethers.Signer
-  ): Promise<{ txHash: string; auditId: string }> {
+    fromAddress: string
+  ): Promise<{ to: string; data: string; from: string; value: string }> {
     try {
-      this.logger.log(`Creating audit for DAO: ${daoAddress}`);
+      this.logger.log(`Preparing audit creation transaction for: ${fromAddress}`);
 
-      const escrowWithSigner = this.escrow.connect(signer);
-      const tx = await escrowWithSigner.createAudit(daoAddress, ipfsHash, {
-        value: ethers.parseEther(amount)
-      });
+      const escrow = new ethers.Contract(
+        process.env.AUDIT_ESCROW_ADDRESS!,
+        AuditEscrowABI.abi,
+        this.provider
+      );
 
-      this.logger.log(`Audit creation transaction sent: ${tx.hash}`);
+      const txData = await escrow.createAudit.populateTransaction(
+        daoAddress,
+        ipfsHash
+      );
 
-      const receipt = await tx.wait();
+      const value = ethers.parseEther(amount);
 
-      this.logger.log(`Audit created successfully`);
-
-      const auditCount = await this.escrow.getAuditCount();
-      const auditId = Number(auditCount);
-
-      return { txHash: tx.hash, auditId: auditId.toString() };
+      return {
+        to: process.env.AUDIT_ESCROW_ADDRESS!,
+        data: txData.data || '0x',
+        from: fromAddress,
+        value: ethers.hexlify(value)
+      };
     } catch (error) {
-      this.logger.error(`Error creating audit: ${error.message}`, error.stack);
+      this.logger.error(`Error preparing audit transaction: ${error.message}`, error.stack);
       throw error;
     }
+  }
   }
 
   async getAudit(auditId: string): Promise<any> {
@@ -82,3 +90,4 @@ export class AuditEscrowService {
     }
   }
 }
+

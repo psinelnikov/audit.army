@@ -1,11 +1,10 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { ReviewSubmissionService } from './review-submission.service';
-import { ethers } from 'ethers';
 
 class SubmitReviewDto {
   auditId: string;
   ipfsHash: string;
-  privateKey: string;
+  walletAddress: string;
 }
 
 @Controller('api/review')
@@ -14,17 +13,15 @@ export class ReviewController {
     private readonly reviewSubmissionService: ReviewSubmissionService
   ) {}
 
-  @Post('submit')
-  async submitReview(@Body() submitReviewDto: SubmitReviewDto) {
+  @Post('prepare-transaction')
+  async prepareSubmitReviewTx(@Body() submitReviewDto: SubmitReviewDto) {
     try {
-      const { auditId, ipfsHash, privateKey } = submitReviewDto;
+      const { auditId, ipfsHash, walletAddress } = submitReviewDto;
 
-      const signer = new ethers.Wallet(privateKey);
-
-      const result = await this.reviewSubmissionService.submitReview(
+      const result = await this.reviewSubmissionService.prepareSubmitReviewTransaction(
         auditId,
         ipfsHash,
-        signer
+        walletAddress
       );
 
       return {
@@ -62,22 +59,6 @@ export class ReviewController {
       return {
         success: true,
         data: { reviews }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  @Get('count')
-  async getReviewCount() {
-    try {
-      const count = await this.reviewSubmissionService.getReviewCount();
-      return {
-        success: true,
-        data: { count }
       };
     } catch (error) {
       return {

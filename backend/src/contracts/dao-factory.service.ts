@@ -20,36 +20,37 @@ export class DaoFactoryService {
     this.logger.log(`DAO Factory initialized at ${factoryAddress}`);
   }
 
-  async createDAO(
+  async prepareCreateDAOTransaction(
     name: string,
     symbol: string,
     initialReviewers: string[],
     description: string,
-    signer: ethers.Signer
-  ): Promise<{ txHash: string; daoAddress: string }> {
+    fromAddress: string
+  ): Promise<{ to: string; data: string; from: string; value: string }> {
     try {
-      this.logger.log(`Creating DAO: ${name} (${symbol})`);
+      this.logger.log(`Preparing DAO creation transaction for: ${fromAddress}`);
 
-      const factoryWithSigner = this.factory.connect(signer);
-      const tx = await factoryWithSigner.createDAO(
+      const factory = new ethers.Contract(
+        process.env.DAO_FACTORY_ADDRESS!,
+        DAOFactoryABI.abi,
+        this.provider
+      );
+
+      const txData = await factory.createDAO.populateTransaction(
         name,
         symbol,
         initialReviewers,
         description
       );
 
-      this.logger.log(`DAO creation transaction sent: ${tx.hash}`);
-
-      await tx.wait();
-
-      this.logger.log(`DAO created successfully`);
-
-      const daoCount = await this.factory.getDAOCount();
-      const daoAddress = await this.factory.getDAOAddress(daoCount);
-
-      return { txHash: tx.hash, daoAddress };
+      return {
+        to: process.env.DAO_FACTORY_ADDRESS!,
+        data: txData.data || '0x',
+        from: fromAddress,
+        value: '0x0'
+      };
     } catch (error) {
-      this.logger.error(`Error creating DAO: ${error.message}`, error.stack);
+      this.logger.error(`Error preparing DAO transaction: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -70,16 +71,6 @@ export class DaoFactoryService {
       return daos;
     } catch (error) {
       this.logger.error(`Error getting all DAOs: ${error.message}`);
-      throw error;
-    }
-  }
-
-  async getDAOCount(): Promise<number> {
-    try {
-      const count = await this.factory.getDAOCount();
-      return Number(count);
-    } catch (error) {
-      this.logger.error(`Error getting DAO count: ${error.message}`);
       throw error;
     }
   }
