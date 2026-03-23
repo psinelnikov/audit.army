@@ -10,6 +10,9 @@ import {
   formatAddress,
 } from '../lib/wallet';
 import { getWalletAddress } from '../lib/api';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Alert, AlertDescription } from '../components/ui/alert';
 
 export default function Home() {
   const [walletState, setWalletState] = useState<{
@@ -110,21 +113,23 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <button
+              <Button
                 onClick={handleConnectWallet}
                 disabled={loading}
-                className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg disabled:opacity-50"
+                className="bg-green-600 hover:bg-green-700"
               >
                 {loading ? 'Connecting...' : 'Connect Wallet'}
-              </button>
+              </Button>
             )}
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-900 border border-red-700 p-4 rounded-lg">
-            <p className="text-red-200">{error}</p>
-          </div>
+          <Alert className="mb-6 border-red-700 bg-red-900">
+            <AlertDescription className="text-red-200">
+              {error}
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="text-center py-20">
@@ -133,54 +138,66 @@ export default function Home() {
             Build decentralized auditing communities for any industry. Like having multiple specialized Better Business Bureaus.
           </p>
 
+          <div className="mb-8">
+            <Link
+              href="/dao/search"
+            >
+              <Button variant="outline" className="bg-gray-700 hover:bg-gray-600">
+                🔍 Explore Existing DAOs
+              </Button>
+            </Link>
+          </div>
+
           {walletState.isConnected && walletState.network !== 'Sepolia Testnet' && (
-            <div className="mb-8 p-4 bg-yellow-900 border border-yellow-700 rounded-lg">
-              <p className="text-yellow-200 mb-4">
+            <Alert className="mb-8 border-yellow-700 bg-yellow-900">
+              <AlertDescription className="text-yellow-200">
                 ⚠️ Please switch to Sepolia testnet to use this prototype
-              </p>
-              <button
-                onClick={handleSwitchNetwork}
-                disabled={loading}
-                className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg disabled:opacity-50"
-              >
-                {loading ? 'Switching...' : 'Switch to Sepolia'}
-              </button>
-            </div>
+                <div className="mt-4">
+                  <Button
+                    onClick={handleSwitchNetwork}
+                    disabled={loading}
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    {loading ? 'Switching...' : 'Switch to Sepolia'}
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Link
-              href="/dao/create"
-              className="bg-green-600 hover:bg-green-700 p-6 rounded-lg text-left disabled:opacity-50"
-              prefetch={false}
-            >
-              <h3 className="text-2xl font-bold mb-2">Create DAO</h3>
-              <p className="text-gray-200">
-                Launch your own specialized DAO for crypto, healthcare, finance, or any industry
-              </p>
-            </Link>
+            <Card className="bg-green-600 hover:bg-green-700 border-green-600">
+              <Link href="/dao/create" prefetch={false}>
+                <CardContent className="p-6">
+                  <CardTitle className="text-white text-2xl font-bold mb-2">Create DAO</CardTitle>
+                  <CardDescription className="text-gray-200">
+                    Launch your own specialized DAO for crypto, healthcare, finance, or any industry
+                  </CardDescription>
+                </CardContent>
+              </Link>
+            </Card>
 
-            <Link
-              href="/audit/request"
-              className="bg-blue-600 hover:bg-blue-700 p-6 rounded-lg text-left disabled:opacity-50"
-              prefetch={false}
-            >
-              <h3 className="text-2xl font-bold mb-2">Request Audit</h3>
-              <p className="text-gray-200">
-                Submit audit requests and lock payment in smart contract escrow
-              </p>
-            </Link>
+            <Card className="bg-blue-600 hover:bg-blue-700 border-blue-600">
+              <Link href="/audit/request" prefetch={false}>
+                <CardContent className="p-6">
+                  <CardTitle className="text-white text-2xl font-bold mb-2">Request Audit</CardTitle>
+                  <CardDescription className="text-gray-200">
+                    Submit audit requests and lock payment in smart contract escrow
+                  </CardDescription>
+                </CardContent>
+              </Link>
+            </Card>
 
-            <Link
-              href="/review/submit"
-              className="bg-purple-600 hover:bg-purple-700 p-6 rounded-lg text-left disabled:opacity-50"
-              prefetch={false}
-            >
-              <h3 className="text-2xl font-bold mb-2">Submit Review</h3>
-              <p className="text-gray-200">
-                As a reviewer, submit your audit reports and earn from quality work
-              </p>
-            </Link>
+            <Card className="bg-purple-600 hover:bg-purple-700 border-purple-600">
+              <Link href="/review/submit" prefetch={false}>
+                <CardContent className="p-6">
+                  <CardTitle className="text-white text-2xl font-bold mb-2">Submit Review</CardTitle>
+                  <CardDescription className="text-gray-200">
+                    As a reviewer, submit your audit reports and earn from quality work
+                  </CardDescription>
+                </CardContent>
+              </Link>
+            </Card>
           </div>
         </div>
 

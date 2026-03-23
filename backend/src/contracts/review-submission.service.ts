@@ -30,10 +30,16 @@ export class ReviewSubmissionService {
   async prepareSubmitReviewTransaction(
     auditId: string,
     ipfsHash: string,
-    fromAddress: string
+    fromAddress: string,
+    documentUrl?: string
   ): Promise<{ to: string; data: string; from: string; value: string }> {
     try {
       this.logger.log(`Preparing review submission transaction for: ${fromAddress}`);
+
+      // If document URL is provided, generate a mock IPFS hash for prototype
+      const effectiveIpfsHash = documentUrl 
+        ? this.generateMockIpfsHash(documentUrl)
+        : ipfsHash;
 
       const submission = new ethers.Contract(
         process.env.REVIEW_SUBMISSION_ADDRESS!,
@@ -43,7 +49,7 @@ export class ReviewSubmissionService {
 
       const txData = await submission.submitReview.populateTransaction(
         auditId,
-        ipfsHash
+        effectiveIpfsHash
       );
 
       return {
@@ -56,6 +62,15 @@ export class ReviewSubmissionService {
       this.logger.error(`Error preparing review transaction: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  /**
+   * Generate mock IPFS hash from document URL (for prototype)
+   */
+  private generateMockIpfsHash(filename: string): string {
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(filename).digest('hex');
+    return `Qm${hash.substring(0, 46)}`;
   }
 
   async getReview(reviewId: string): Promise<any> {

@@ -49,13 +49,12 @@ export class AuditEscrowService {
         to: process.env.AUDIT_ESCROW_ADDRESS!,
         data: txData.data || '0x',
         from: fromAddress,
-        value: ethers.hexlify(value)
+        value: value.toString()
       };
     } catch (error) {
       this.logger.error(`Error preparing audit transaction: ${error.message}`, error.stack);
       throw error;
     }
-  }
   }
 
   async getAudit(auditId: string): Promise<any> {

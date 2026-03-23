@@ -1,21 +1,26 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, UploadedFile, Logger, UseInterceptors } from '@nestjs/common';
 import { AuditEscrowService } from './audit-escrow.service';
+import { v4 as uuidv4 } from 'uuid';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 class CreateAuditDto {
   daoAddress: string;
   ipfsHash: string;
+  documentUrl?: string;
   amount: string;
   walletAddress: string;
 }
 
 @Controller('api/audit')
 export class AuditController {
+  private readonly logger: Logger = new Logger(AuditController.name);
+
   constructor(private readonly auditEscrowService: AuditEscrowService) {}
 
   @Post('prepare-transaction')
   async prepareCreateAuditTx(@Body() createAuditDto: CreateAuditDto) {
     try {
-      const { daoAddress, ipfsHash, amount, walletAddress } = createAuditDto;
+      const { daoAddress, ipfsHash, documentUrl, amount, walletAddress } = createAuditDto;
 
       const result = await this.auditEscrowService.prepareCreateAuditTransaction(
         daoAddress,
@@ -36,6 +41,61 @@ export class AuditController {
     }
   }
 
+  @Post('upload-document')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadDocument(@UploadedFile() file: any) {
+    try {
+      this.logger.log(`Uploading audit document: ${file.originalname}`);
+
+      // Validate file
+      if (!file.mimetype.match(/^(application\/pdf|image\/jpeg|image\/png|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/)) {
+        throw new Error('Invalid file type. Please upload PDF, images (JPEG/PNG), or Word documents.');
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File too large. Maximum size is 10MB.');
+      }
+
+      // Save file locally
+      const fs = require('fs');
+      const path = require('path');
+      const uploadsDir = './uploads/audit-documents';
+
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const filename = `${Date.now()}-${file.originalname}`;
+      const filePath = path.join(uploadsDir, filename);
+      fs.writeFileSync(filePath, file.buffer);
+
+      const documentUrl = `/api/audit/documents/${filename}`;
+
+      return {
+        success: true,
+        data: {
+          filename,
+          documentUrl,
+          ipfsHash: this.generateMockIpfsHash(filename),
+          size: file.size,
+          mimetype: file.mimetype,
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Error uploading document: ${error.message}`);
+      return {
+        success: false,
+        error: error.message || 'Failed to upload document'
+      };
+    }
+  }
+
+  private generateMockIpfsHash(filename: string): string {
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(filename).digest('hex');
+    return `Qm${hash.substring(0, 46)}`;
+  }
+
   @Get(':id')
   async getAudit(@Param('id') id: string) {
     try {
@@ -48,6 +108,40 @@ export class AuditController {
       return {
         success: false,
         error: error.message
+      };
+    }
+  }
+
+  @Get('document/:filename')
+  async getDocument(@Param('filename') filename: string) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const filePath = path.join('./uploads/audit-documents', filename);
+
+      if (!fs.existsSync(filePath)) {
+        return {
+          success: false,
+          error: 'Document not found'
+        };
+      }
+
+      const stats = fs.statSync(filePath);
+      const fileBuffer = fs.readFileSync(filePath);
+
+      return {
+        success: true,
+        data: {
+          filename,
+          size: stats.size,
+          mimetype: 'application/octet-stream',
+          buffer: fileBuffer.toString('base64'),
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Failed to get document'
       };
     }
   }

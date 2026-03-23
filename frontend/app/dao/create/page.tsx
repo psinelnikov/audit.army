@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { prepareCreateDAO } from '../../../lib/api';
 import {
@@ -9,6 +9,12 @@ import {
   getWalletState,
   switchToSepolia,
 } from '../../../lib/wallet';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Label } from '../../../components/ui/label';
+import { Textarea } from '../../../components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Alert, AlertDescription } from '../../../components/ui/alert';
 
 export default function CreateDAOPage() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -26,6 +32,10 @@ export default function CreateDAOPage() {
     error?: string;
     txHash?: string;
   } | null>(null);
+
+  useEffect(() => {
+    checkWallet();
+  }, []);
 
   const checkWallet = async () => {
     try {
@@ -105,131 +115,154 @@ export default function CreateDAOPage() {
         <h1 className="text-4xl font-bold mb-8">Create Your DAO</h1>
 
         {walletAddress ? (
-          <div className="mb-6 p-4 bg-green-900 border border-green-700 rounded-lg">
-            <p className="text-sm text-green-200">
+          <Alert className="mb-6 border-green-700 bg-green-900 text-green-200">
+            <AlertDescription>
               ✓ Connected: {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
-            </p>
-            <button
-              onClick={checkWallet}
-              className="mt-2 text-xs bg-green-800 hover:bg-green-900 px-3 py-1 rounded"
-            >
-              Refresh
-            </button>
-          </div>
+              <Button
+                onClick={checkWallet}
+                variant="outline"
+                size="sm"
+                className="mt-2 ml-4 border-green-800 text-green-200 hover:bg-green-800"
+              >
+                Refresh
+              </Button>
+            </AlertDescription>
+          </Alert>
         ) : (
-          <div className="mb-6 p-4 bg-yellow-900 border border-yellow-700 rounded-lg">
-            <p className="text-yellow-200 mb-4">
+          <Alert className="mb-6 border-yellow-700 bg-yellow-900 text-yellow-200">
+            <AlertDescription>
               ⚠️ Please connect your wallet on the home page first
-            </p>
-            <Link href="/" className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg inline-block">
-              Go to Home
-            </Link>
-          </div>
+              <Link href="/" className="ml-4">
+                <Button variant="outline" className="border-yellow-600 text-yellow-200 hover:bg-yellow-600">
+                  Go to Home
+                </Button>
+              </Link>
+            </AlertDescription>
+          </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block mb-2 font-semibold">DAO Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white"
-              placeholder="Crypto Audit DAO"
-              required
-              disabled={!walletAddress}
-            />
-          </div>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Create Your DAO</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <Label htmlFor="name" className="text-white font-semibold">DAO Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="mt-2 bg-gray-700 border-gray-600 text-white"
+                  placeholder="Crypto Audit DAO"
+                  required
+                  disabled={!walletAddress}
+                />
+              </div>
 
-          <div>
-            <label className="block mb-2 font-semibold">DAO Symbol</label>
-            <input
-              type="text"
-              value={formData.symbol}
-              onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
-              className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white"
-              placeholder="CAD"
-              required
-              maxLength={8}
-              disabled={!walletAddress}
-            />
-          </div>
+              <div>
+                <Label htmlFor="symbol" className="text-white font-semibold">DAO Symbol</Label>
+                <Input
+                  id="symbol"
+                  type="text"
+                  value={formData.symbol}
+                  onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
+                  className="mt-2 bg-gray-700 border-gray-600 text-white"
+                  placeholder="CAD"
+                  required
+                  maxLength={8}
+                  disabled={!walletAddress}
+                />
+              </div>
 
-          <div>
-            <label className="block mb-2 font-semibold">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white"
-              placeholder="A DAO for crypto audits"
-              rows={4}
-              required
-              disabled={!walletAddress}
-            />
-          </div>
+              <div>
+                <Label htmlFor="description" className="text-white font-semibold">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="mt-2 bg-gray-700 border-gray-600 text-white"
+                  placeholder="A DAO for crypto audits"
+                  rows={4}
+                  required
+                  disabled={!walletAddress}
+                />
+              </div>
 
-          <div>
-            <label className="block mb-2 font-semibold">
-              Initial Reviewers (comma-separated addresses)
-            </label>
-            <input
-              type="text"
-              value={formData.initialReviewers}
-              onChange={(e) => setFormData({ ...formData, initialReviewers: e.target.value })}
-              className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white"
-              placeholder="0x123..., 0x456..."
-              required
-              disabled={!walletAddress}
-            />
-            <p className="text-sm text-gray-400 mt-1">
-              Must be valid Ethereum addresses starting with 0x
-            </p>
-          </div>
+              <div>
+                <Label htmlFor="reviewers" className="text-white font-semibold">
+                  Initial Reviewers (comma-separated addresses)
+                </Label>
+                <Input
+                  id="reviewers"
+                  type="text"
+                  value={formData.initialReviewers}
+                  onChange={(e) => setFormData({ ...formData, initialReviewers: e.target.value })}
+                  className="mt-2 bg-gray-700 border-gray-600 text-white"
+                  placeholder="0x123..., 0x456..."
+                  required
+                  disabled={!walletAddress}
+                />
+                <p className="text-sm text-gray-400 mt-1">
+                  Must be valid Ethereum addresses starting with 0x
+                </p>
+              </div>
 
-          <button
-            type="submit"
-            disabled={loading || !walletAddress}
-            className="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg font-semibold disabled:opacity-50"
-          >
-            {loading ? 'Preparing Transaction...' : 
-             signing ? 'Signing...' : 
-             'Create DAO (Sign with Wallet)'}
-          </button>
-        </form>
+              <Button
+                type="submit"
+                disabled={loading || !walletAddress}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {loading ? 'Preparing Transaction...' : 
+                 signing ? 'Signing...' : 
+                 'Create DAO (Sign with Wallet)'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         {result && result.success && result.txHash && (
-          <div className="mt-6 p-6 rounded-lg bg-blue-900 border border-blue-700">
-            <h3 className="text-xl font-bold mb-2">✓ DAO Creation Started!</h3>
-            <p className="mb-2">Transaction Hash: {result.txHash}</p>
-            <p className="text-sm text-blue-200">
-              Your transaction has been submitted to Sepolia. It will take 1-2 minutes to confirm.
-            </p>
-            <a
-              href={`https://sepolia.etherscan.io/tx/${result.txHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:underline mt-4 inline-block"
-            >
-              View on Etherscan →
-            </a>
-          </div>
+          <Alert className="mt-6 border-blue-700 bg-blue-900">
+            <AlertDescription className="text-blue-200">
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-white">✓ DAO Creation Started!</h3>
+                <p>Transaction Hash: {result.txHash}</p>
+                <p className="text-sm">
+                  Your transaction has been submitted to Sepolia. It will take 1-2 minutes to confirm.
+                </p>
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${result.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline mt-4 inline-block"
+                >
+                  View on Etherscan →
+                </a>
+              </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         {result && !result.success && (
-          <div className="mt-6 p-6 rounded-lg bg-red-900 border border-red-700">
-            <h3 className="text-xl font-bold mb-2">✗ Error</h3>
-            <p>{result.error}</p>
-          </div>
+          <Alert className="mt-6 border-red-700 bg-red-900">
+            <AlertDescription className="text-red-200">
+              <h3 className="text-xl font-bold text-white mb-2">✗ Error</h3>
+              <p>{result.error}</p>
+            </AlertDescription>
+          </Alert>
         )}
 
-        <div className="mt-8 p-4 bg-gray-800 border border-gray-700 rounded-lg">
-          <h4 className="font-semibold mb-2">🔒 Security Information</h4>
-          <p className="text-sm text-gray-300">
-            Your private key is NEVER exposed or transmitted to the server.
-            All transactions are signed directly in your MetaMask wallet.
-            This is the secure, standard way web3 applications work.
-          </p>
-        </div>
+        <Card className="mt-8 bg-gray-800 border-gray-700">
+          <CardContent className="p-4">
+            <h4 className="font-semibold mb-2 text-white">🔒 Security Information</h4>
+            <p className="text-sm text-gray-300">
+              Your private key is NEVER exposed or transmitted to the server.
+              All transactions are signed directly in your MetaMask wallet.
+              This is the secure, standard way web3 applications work.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

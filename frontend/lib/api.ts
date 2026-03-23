@@ -35,6 +35,45 @@ interface PrepareReviewResponse {
   error?: string;
 }
 
+interface UploadDocumentResponse {
+  success: boolean;
+  data: {
+    filename: string;
+    documentUrl: string;
+    ipfsHash: string;
+    size: number;
+    mimetype: string;
+  };
+  error?: string;
+}
+
+interface SearchDAOsResponse {
+  success: boolean;
+  data: {
+    daos: Array<{
+      id: number;
+      name: string;
+      symbol: string;
+      description: string;
+      contractAddress: string;
+      creatorWallet: string;
+      createdAt: string;
+      logoUrl?: string;
+    }>;
+  };
+  error?: string;
+}
+
+interface DAOStatsResponse {
+  success: boolean;
+  data: {
+    total: number;
+    thisMonth: number;
+    thisWeek: number;
+  };
+  error?: string;
+}
+
 export async function prepareCreateDAO(data: {
   name: string;
   symbol: string;
@@ -74,6 +113,31 @@ export async function prepareSubmitReview(data: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+  return response.json();
+}
+
+export async function uploadDocument(file: File): Promise<UploadDocumentResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_URL}/api/review/upload-document`, {
+    method: 'POST',
+    body: formData,
+  });
+  return response.json();
+}
+
+export async function searchDAOs(search?: string): Promise<SearchDAOsResponse> {
+  const url = search 
+    ? `${API_URL}/api/dao/search?search=${encodeURIComponent(search)}`
+    : `${API_URL}/api/dao/search`;
+  
+  const response = await fetch(url);
+  return response.json();
+}
+
+export async function getDAOStats(): Promise<DAOStatsResponse> {
+  const response = await fetch(`${API_URL}/api/dao/stats`);
   return response.json();
 }
 
