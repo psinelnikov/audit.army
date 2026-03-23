@@ -36,9 +36,6 @@ export class AuthService {
 
   async verifySignature(message: string, signature: string): Promise<{ token: string; address: string }> {
     try {
-      console.log('Verifying SIWE message:', message);
-      console.log('Signature:', signature);
-      
       // Parse the message manually instead of using SIWE library parser
       const lines = message.split('\n').filter(line => line.trim() !== '');
       
@@ -54,17 +51,10 @@ export class AuthService {
       const nonceLine = lines[lines.length - 1];
       const nonce = nonceLine.replace('Nonce:', '').trim();
       
-      console.log('Extracted address:', messageAddress);
-      console.log('Extracted nonce:', nonce);
-      
       const normalizedAddress = ethers.getAddress(messageAddress);
       const recoveredAddress = ethers.verifyMessage(message, signature);
       
-      console.log('Recovered address:', recoveredAddress);
-      console.log('Expected address:', normalizedAddress);
-      
       if (recoveredAddress.toLowerCase() !== normalizedAddress.toLowerCase()) {
-        console.log('Address mismatch!');
         throw new UnauthorizedException('Signature verification failed');
       }
       
@@ -73,12 +63,10 @@ export class AuthService {
       });
 
       if (!user) {
-        console.log('User not found for address:', normalizedAddress);
         throw new UnauthorizedException('User not found');
       }
 
       if (user.nonce !== nonce) {
-        console.log('Nonce mismatch. User nonce:', user.nonce, 'Message nonce:', nonce);
         throw new UnauthorizedException('Invalid nonce');
       }
 
@@ -92,7 +80,6 @@ export class AuthService {
         address: normalizedAddress,
       };
     } catch (error) {
-      console.error('SIWE verification error:', error);
       if (error instanceof UnauthorizedException) {
         throw error;
       }

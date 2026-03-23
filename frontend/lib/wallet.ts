@@ -314,16 +314,13 @@ export async function authenticateWithSiwe(): Promise<AuthState> {
     }
 
     // Get nonce from backend
-    console.log('Requesting nonce for address:', walletState.address);
     const nonceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/nonce`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ address: walletState.address }),
     });
 
-    console.log('Nonce response status:', nonceResponse.status);
     const nonceData = await nonceResponse.json();
-    console.log('Nonce response data:', nonceData);
     if (!nonceData.success) {
       throw new Error(nonceData.error || 'Failed to get nonce');
     }
@@ -332,19 +329,11 @@ export async function authenticateWithSiwe(): Promise<AuthState> {
     const domain = window.location.host;
     const uri = window.location.origin;
     const message = createSiweMessage(walletState.address, nonceData.data.nonce, domain, uri);
-    
-    console.log('Generated SIWE message:', message);
-    console.log('Wallet address:', walletState.address);
-    console.log('Nonce:', nonceData.data.nonce);
-    console.log('Domain:', domain);
-    console.log('URI:', uri);
 
     // Sign message
     const signature = await signMessage(message);
-    console.log('Generated signature:', signature);
 
     // Verify signature with backend
-    console.log('Sending to backend:', { message, signature });
     const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -352,7 +341,6 @@ export async function authenticateWithSiwe(): Promise<AuthState> {
     });
 
     const verifyData = await verifyResponse.json();
-    console.log('Backend response:', verifyData);
     if (!verifyData.success) {
       throw new Error(verifyData.error || 'Failed to verify signature');
     }
