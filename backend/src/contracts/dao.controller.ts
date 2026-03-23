@@ -54,42 +54,8 @@ export class DaoController {
         // Continue with mock data if blockchain fetch fails
       }
 
-      // Mock data for demonstration
-      const mockDAOs = [
-        {
-          id: 1,
-          name: 'Crypto Audit DAO',
-          symbol: 'CAD',
-          description: 'A DAO for auditing smart contracts and DeFi protocols',
-          contractAddress: '0x1234567890123456789012345678901234567890',
-          creatorWallet: '0x0987654321098765432109876543210987654321',
-          createdAt: new Date('2024-01-15').toISOString(),
-          logoUrl: null,
-          isUserCreated: false
-        },
-        {
-          id: 2,
-          name: 'Healthcare Review DAO',
-          symbol: 'HRD',
-          description: 'Decentralized community for reviewing medical research and healthcare protocols',
-          contractAddress: '0x2345678901234567890123456789012345678901',
-          creatorWallet: '0x1098765432109876543210987654321098765432',
-          createdAt: new Date('2024-02-20').toISOString(),
-          logoUrl: null,
-          isUserCreated: false
-        },
-        {
-          id: 3,
-          name: 'Finance Audit Alliance',
-          symbol: 'FAA',
-          description: 'Professional auditors DAO for financial protocols and banking systems',
-          contractAddress: '0x3456789012345678901234567890123456789012',
-          creatorWallet: '0x2109876543210987654321098765432109876543',
-          createdAt: new Date('2024-03-10').toISOString(),
-          logoUrl: null,
-          isUserCreated: false
-        }
-      ];
+      // No example DAOs - only user-created DAOs from blockchain
+      const mockDAOs: any[] = [];
 
       // Combine real DAOs with mock data, putting real DAOs first
       const allDAOs = [...realDAOs, ...mockDAOs];
@@ -130,17 +96,17 @@ export class DaoController {
         // Continue with mock data if blockchain fetch fails
       }
 
-      // Mock stats for demonstration + real DAO count
-      const mockStats = {
-        total: 3 + realDAOCount, // Mock DAOs + real DAOs
-        thisMonth: 1 + realDAOCount, // Assume all real DAOs were created this month for demo
-        thisWeek: realDAOCount, // Assume real DAOs were created this week for demo
-        realDAOCount: realDAOCount // Add separate count for real DAOs
+      // Real stats only - no example DAOs
+      const stats = {
+        total: realDAOCount,
+        thisMonth: realDAOCount, // Assume all real DAOs were created this month
+        thisWeek: Math.min(realDAOCount, Math.floor(realDAOCount / 2)), // Some portion created this week
+        realDAOCount: realDAOCount
       };
       
       return {
         success: true,
-        data: mockStats
+        data: stats
       };
     } catch (error) {
       return {

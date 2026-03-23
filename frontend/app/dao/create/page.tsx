@@ -106,34 +106,34 @@ export default function CreateDAOPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground army-pattern">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link href="/" className="text-blue-400 hover:underline mb-8 inline-block">
+        <Link href="/" className="text-primary hover:underline mb-8 inline-block">
           ← Back to Home
         </Link>
 
-        <h1 className="text-4xl font-bold mb-8">Create Your DAO</h1>
+        <h1 className="text-4xl font-bold mb-8 camo-text">Create Your DAO</h1>
 
         {walletAddress ? (
-          <Alert className="mb-6 border-green-700 bg-green-900 text-green-200">
-            <AlertDescription>
+          <Alert className="mb-6 border-primary bg-primary/10 camo-border">
+            <AlertDescription className="text-primary">
               ✓ Connected: {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
               <Button
                 onClick={checkWallet}
                 variant="outline"
                 size="sm"
-                className="mt-2 ml-4 border-green-800 text-green-200 hover:bg-green-800"
+                className="mt-2 ml-4 camo-border"
               >
                 Refresh
               </Button>
             </AlertDescription>
           </Alert>
         ) : (
-          <Alert className="mb-6 border-yellow-700 bg-yellow-900 text-yellow-200">
-            <AlertDescription>
+          <Alert className="mb-6 border-secondary bg-secondary/10 camo-border">
+            <AlertDescription className="text-secondary-foreground">
               ⚠️ Please connect your wallet on the home page first
               <Link href="/" className="ml-4">
-                <Button variant="outline" className="border-yellow-600 text-yellow-200 hover:bg-yellow-600">
+                <Button variant="outline" className="camo-border">
                   Go to Home
                 </Button>
               </Link>
@@ -141,35 +141,35 @@ export default function CreateDAOPage() {
           </Alert>
         )}
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-card border-border camo-border">
           <CardHeader>
-            <CardTitle className="text-white">Create Your DAO</CardTitle>
+            <CardTitle className="text-foreground">Create Your DAO</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label htmlFor="name" className="text-white font-semibold">DAO Name</Label>
+                <Label htmlFor="name" className="text-foreground font-semibold">DAO Name</Label>
                 <Input
                   id="name"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="mt-2 bg-gray-700 border-gray-600 text-white"
-                  placeholder="Crypto Audit DAO"
+                  className="mt-2 bg-muted border-border text-foreground"
+                  placeholder="My Audit DAO"
                   required
                   disabled={!walletAddress}
                 />
               </div>
 
               <div>
-                <Label htmlFor="symbol" className="text-white font-semibold">DAO Symbol</Label>
+                <Label htmlFor="symbol" className="text-foreground font-semibold">DAO Symbol</Label>
                 <Input
                   id="symbol"
                   type="text"
                   value={formData.symbol}
                   onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
-                  className="mt-2 bg-gray-700 border-gray-600 text-white"
-                  placeholder="CAD"
+                  className="mt-2 bg-muted border-border text-foreground"
+                  placeholder="MAD"
                   required
                   maxLength={8}
                   disabled={!walletAddress}
@@ -177,13 +177,13 @@ export default function CreateDAOPage() {
               </div>
 
               <div>
-                <Label htmlFor="description" className="text-white font-semibold">Description</Label>
+                <Label htmlFor="description" className="text-foreground font-semibold">Description</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="mt-2 bg-gray-700 border-gray-600 text-white"
-                  placeholder="A DAO for crypto audits"
+                  className="mt-2 bg-muted border-border text-foreground"
+                  placeholder="A decentralized audit community"
                   rows={4}
                   required
                   disabled={!walletAddress}
@@ -191,7 +191,7 @@ export default function CreateDAOPage() {
               </div>
 
               <div>
-                <Label htmlFor="reviewers" className="text-white font-semibold">
+                <Label htmlFor="reviewers" className="text-foreground font-semibold">
                   Initial Reviewers (comma-separated addresses)
                 </Label>
                 <Input
@@ -199,12 +199,12 @@ export default function CreateDAOPage() {
                   type="text"
                   value={formData.initialReviewers}
                   onChange={(e) => setFormData({ ...formData, initialReviewers: e.target.value })}
-                  className="mt-2 bg-gray-700 border-gray-600 text-white"
+                  className="mt-2 bg-muted border-border text-foreground"
                   placeholder="0x123..., 0x456..."
                   required
                   disabled={!walletAddress}
                 />
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Must be valid Ethereum addresses starting with 0x
                 </p>
               </div>
@@ -212,7 +212,7 @@ export default function CreateDAOPage() {
               <Button
                 type="submit"
                 disabled={loading || !walletAddress}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-primary hover:bg-primary/90 camo-border"
               >
                 {loading ? 'Preparing Transaction...' : 
                  signing ? 'Signing...' : 
@@ -223,10 +223,10 @@ export default function CreateDAOPage() {
         </Card>
 
         {result && result.success && result.txHash && (
-          <Alert className="mt-6 border-blue-700 bg-blue-900">
-            <AlertDescription className="text-blue-200">
+          <Alert className="mt-6 border-accent bg-accent/10 camo-border">
+            <AlertDescription className="text-accent-foreground">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-white">✓ DAO Creation Started!</h3>
+                <h3 className="text-xl font-bold text-foreground">✓ DAO Creation Started!</h3>
                 <p>Transaction Hash: {result.txHash}</p>
                 <p className="text-sm">
                   Your transaction has been submitted to Sepolia. It will take 1-2 minutes to confirm.
@@ -235,7 +235,7 @@ export default function CreateDAOPage() {
                   href={`https://sepolia.etherscan.io/tx/${result.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline mt-4 inline-block"
+                  className="text-primary hover:underline mt-4 inline-block"
                 >
                   View on Etherscan →
                 </a>
@@ -245,9 +245,9 @@ export default function CreateDAOPage() {
         )}
 
         {result && !result.success && (
-          <Alert className="mt-6 border-red-700 bg-red-900">
-            <AlertDescription className="text-red-200">
-              <h3 className="text-xl font-bold text-white mb-2">✗ Error</h3>
+          <Alert className="mt-6 border-destructive bg-destructive/10 camo-border">
+            <AlertDescription className="text-destructive">
+              <h3 className="text-xl font-bold text-foreground mb-2">✗ Error</h3>
               <p>{result.error}</p>
             </AlertDescription>
           </Alert>

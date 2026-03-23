@@ -39,13 +39,19 @@ export class AuthController {
 
   @Get('me')
   async getProfile(@Headers('authorization') authHeader: string) {
+    console.log('Auth header received:', authHeader);
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('No token provided or invalid format');
       throw new UnauthorizedException('No token provided');
     }
 
     const token = authHeader.substring(7);
+    console.log('Extracted token:', token);
+    
     try {
       const user = await this.authService.verifySession(token);
+      console.log('User found:', user.walletAddress);
       return {
         success: true,
         data: {
@@ -55,6 +61,7 @@ export class AuthController {
         }
       };
     } catch (error: any) {
+      console.log('Session verification failed:', error.message);
       throw new UnauthorizedException('Invalid token');
     }
   }

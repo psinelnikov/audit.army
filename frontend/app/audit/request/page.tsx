@@ -125,59 +125,78 @@ export default function RequestAuditPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground army-pattern">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link href="/" className="text-blue-400 hover:underline mb-8 inline-block">
+        <Link href="/" className="text-primary hover:underline mb-8 inline-block">
           ← Back to Home
         </Link>
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-card border-border camo-border">
           <CardHeader>
-            <CardTitle className="text-white">Request an Audit</CardTitle>
+            <CardTitle className="text-foreground">Request an Audit</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label htmlFor="daoAddress" className="text-white font-semibold">DAO Address</Label>
+                <Label htmlFor="daoAddress" className="text-foreground font-semibold">DAO Address</Label>
                 <Input
                   id="daoAddress"
                   type="text"
                   value={formData.daoAddress}
                   onChange={(e) => setFormData({ ...formData, daoAddress: e.target.value })}
-                  className="mt-2 bg-gray-700 border-gray-600 text-white"
+                  className="mt-2 bg-muted border-border text-foreground"
                   placeholder="0x123..."
                   required
                   disabled={!walletAddress}
                 />
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   The DAO address you want to request an audit from
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="document" className="text-white font-semibold">Audit Document</Label>
+                <Label htmlFor="document" className="text-foreground font-semibold">Audit Document</Label>
                 <div className="mt-2 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <Input
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
+                    <input
                       id="document"
                       type="file"
                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                       onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                      className="bg-gray-700 border-gray-600 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                      className="hidden"
                       disabled={!walletAddress || uploading}
                     />
+                    <label
+                      htmlFor="document"
+                      className={`cursor-pointer inline-block ${
+                        (!walletAddress || uploading) ? 'opacity-50 cursor-not-allowed' : 'hover:text-primary'
+                      }`}
+                    >
+                      <div className="space-y-3">
+                        <div className="text-5xl text-center">📄</div>
+                        <p className="text-lg font-medium text-center">
+                          {selectedFile ? selectedFile.name : 'Choose a file or drag it here'}
+                        </p>
+                        <p className="text-sm text-muted-foreground text-center max-w-xs mx-auto">
+                          PDF, Word, or images (max 10MB)
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {selectedFile && (
                     <Button
                       onClick={handleFileUpload}
                       disabled={!selectedFile || uploading || !walletAddress}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-primary hover:bg-primary/90 camo-border"
                     >
-                      {uploading ? 'Uploading...' : 'Upload'}
+                      {uploading ? 'Uploading...' : 'Upload Document'}
                     </Button>
-                  </div>
-                  
+                  )}
+                
                   {uploadResult && (
-                    <Alert className={uploadResult.success ? 'border-green-700 bg-green-900' : 'border-red-700 bg-red-900'}>
-                      <AlertDescription className={uploadResult.success ? 'text-green-200' : 'text-red-200'}>
+                    <Alert className={uploadResult.success ? 'border-accent bg-accent/10 camo-border' : 'border-destructive bg-destructive/10 camo-border'}>
+                      <AlertDescription className={uploadResult.success ? 'text-accent-foreground' : 'text-destructive'}>
                         {uploadResult.success 
                           ? `✅ Document uploaded successfully! IPFS Hash: ${uploadResult.data?.ipfsHash?.slice(0, 20)}...`
                           : `❌ ${uploadResult.error}`
@@ -186,7 +205,7 @@ export default function RequestAuditPage() {
                     </Alert>
                   )}
                   
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-muted-foreground">
                     Upload your audit documents (PDF, Word, or images). Max file size: 10MB.
                   </p>
                 </div>
@@ -201,20 +220,20 @@ export default function RequestAuditPage() {
               </div>
 
               <div>
-                <Label htmlFor="amount" className="text-white font-semibold">Audit Fee (ETH)</Label>
+                <Label htmlFor="amount" className="text-foreground font-semibold">Audit Fee (ETH)</Label>
                 <Input
                   id="amount"
                   type="number"
                   step="0.001"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  className="mt-2 bg-gray-700 border-gray-600 text-white"
+                  className="mt-2 bg-muted border-border text-foreground"
                   placeholder="0.01"
                   required
                   min="0.001"
                   disabled={!walletAddress}
                 />
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   80% goes to reviewer, 20% to DAO treasury
                 </p>
               </div>
@@ -222,7 +241,7 @@ export default function RequestAuditPage() {
               <Button
                 type="submit"
                 disabled={loading || !walletAddress}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-accent hover:bg-accent/90 camo-border"
               >
                 {loading ? 'Preparing Transaction...' : 
                  signing ? 'Signing...' : 
@@ -233,10 +252,10 @@ export default function RequestAuditPage() {
         </Card>
 
         {result && result.success && result.txHash && (
-          <Alert className="mt-6 border-blue-700 bg-blue-900">
-            <AlertDescription className="text-blue-200">
+          <Alert className="mt-6 border-primary bg-primary/10 camo-border">
+            <AlertDescription className="text-primary">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-white">✓ Audit Request Started!</h3>
+                <h3 className="text-xl font-bold text-foreground">✓ Audit Request Started!</h3>
                 <p>Transaction Hash: {result.txHash}</p>
                 <p className="text-sm">
                   Your transaction has been submitted to Sepolia with payment locked in escrow.
@@ -245,7 +264,7 @@ export default function RequestAuditPage() {
                   href={`https://sepolia.etherscan.io/tx/${result.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline mt-4 inline-block"
+                  className="text-primary hover:underline mt-4 inline-block"
                 >
                   View on Etherscan →
                 </a>
@@ -255,9 +274,9 @@ export default function RequestAuditPage() {
         )}
 
         {result && !result.success && (
-          <Alert className="mt-6 border-red-700 bg-red-900">
-            <AlertDescription className="text-red-200">
-              <h3 className="text-xl font-bold text-white mb-2">✗ Error</h3>
+          <Alert className="mt-6 border-destructive bg-destructive/10 camo-border">
+            <AlertDescription className="text-destructive">
+              <h3 className="text-xl font-bold text-foreground mb-2">✗ Error</h3>
               <p>{result.error}</p>
             </AlertDescription>
           </Alert>

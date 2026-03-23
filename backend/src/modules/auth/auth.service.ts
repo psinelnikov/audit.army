@@ -88,9 +88,13 @@ export class AuthService {
   }
 
   async verifySession(token: string): Promise<User> {
+    console.log('Verifying session token:', token);
+    
     const user = await this.userRepository.findOne({
       where: { sessionToken: token },
     });
+
+    console.log('User found for token:', user ? user.walletAddress : 'null');
 
     if (!user) {
       throw new UnauthorizedException('Invalid session token');

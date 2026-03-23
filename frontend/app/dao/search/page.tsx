@@ -87,33 +87,33 @@ export default function DAOSearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground army-pattern">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <Link href="/" className="text-blue-400 hover:underline mb-8 inline-block">
+        <Link href="/" className="text-primary hover:underline mb-8 inline-block">
           ← Back to Home
         </Link>
 
-        <h1 className="text-4xl font-bold mb-8">Explore DAOs</h1>
+        <h1 className="text-4xl font-bold mb-8 camo-text">Explore DAOs</h1>
 
         {/* Stats Section */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-card border-border camo-border">
               <CardContent className="p-6">
-                <CardTitle className="text-2xl font-bold text-blue-400">{stats.total}</CardTitle>
-                <CardDescription className="text-gray-300">Total DAOs</CardDescription>
+                <CardTitle className="text-2xl font-bold text-primary">{stats.total}</CardTitle>
+                <CardDescription className="text-muted-foreground">Total DAOs</CardDescription>
               </CardContent>
             </Card>
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-card border-border camo-border">
               <CardContent className="p-6">
-                <CardTitle className="text-2xl font-bold text-green-400">{stats.thisMonth}</CardTitle>
-                <CardDescription className="text-gray-300">Created This Month</CardDescription>
+                <CardTitle className="text-2xl font-bold text-accent">{stats.thisMonth}</CardTitle>
+                <CardDescription className="text-muted-foreground">Created This Month</CardDescription>
               </CardContent>
             </Card>
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-card border-border camo-border">
               <CardContent className="p-6">
-                <CardTitle className="text-2xl font-bold text-purple-400">{stats.thisWeek}</CardTitle>
-                <CardDescription className="text-gray-300">Created This Week</CardDescription>
+                <CardTitle className="text-2xl font-bold text-secondary">{stats.thisWeek}</CardTitle>
+                <CardDescription className="text-muted-foreground">Created This Week</CardDescription>
               </CardContent>
             </Card>
           </div>
@@ -127,10 +127,10 @@ export default function DAOSearchPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search DAOs by name, symbol, or description..."
-              className="w-full p-4 pl-12 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500"
+              className="w-full p-4 pl-12 bg-muted border-border text-foreground placeholder-muted-foreground focus:border-primary"
             />
-            <div className="absolute left-4 top-4 text-gray-400">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -138,14 +138,14 @@ export default function DAOSearchPage() {
         </div>
 
         {/* Create DAO CTA */}
-        <Card className="mb-8 bg-gradient-to-r from-blue-600 to-purple-600 border-blue-600">
+        <Card className="mb-8 camo-bg border-primary camo-border">
           <CardContent className="p-8 text-center">
-            <CardTitle className="text-2xl font-bold mb-4 text-white">Create Your Own DAO</CardTitle>
-            <CardDescription className="mb-6 text-blue-100">
+            <CardTitle className="text-2xl font-bold mb-4 text-foreground">Create Your Own DAO</CardTitle>
+            <CardDescription className="mb-6 text-muted-foreground">
               Start your decentralized auditing community today
             </CardDescription>
             <Link href="/dao/create">
-              <Button className="bg-white text-blue-600 hover:bg-gray-100">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 camo-border">
                 Create DAO →
               </Button>
             </Link>
@@ -155,14 +155,14 @@ export default function DAOSearchPage() {
         {/* DAOs List */}
         {loading && (
           <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-            <p className="mt-4 text-gray-400">Loading DAOs...</p>
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="mt-4 text-muted-foreground">Loading DAOs...</p>
           </div>
         )}
 
         {error && (
-          <Alert className="border-red-700 bg-red-900 mb-8">
-            <AlertDescription className="text-red-200">
+          <Alert className="border-destructive bg-destructive/10 camo-border mb-8">
+            <AlertDescription className="text-destructive">
               <h3 className="text-xl font-bold mb-2">Error</h3>
               <p>{error}</p>
             </AlertDescription>
@@ -170,15 +170,15 @@ export default function DAOSearchPage() {
         )}
 
         {!loading && !error && daos.length === 0 && (
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-card border-border camo-border">
             <CardContent className="p-12 text-center">
-              <CardTitle className="text-xl font-semibold mb-2 text-white">No DAOs Found</CardTitle>
-              <CardDescription className="text-gray-400 mb-6">
+              <CardTitle className="text-xl font-semibold mb-2 text-foreground">No DAOs Found</CardTitle>
+              <CardDescription className="text-muted-foreground mb-6">
                 {searchTerm ? 'Try adjusting your search terms' : 'Be the first to create a DAO!'}
               </CardDescription>
               {!searchTerm && (
                 <Link href="/dao/create">
-                  <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Button className="bg-primary hover:bg-primary/90 camo-border">
                     Create DAO
                   </Button>
                 </Link>
@@ -190,43 +190,38 @@ export default function DAOSearchPage() {
         {!loading && !error && daos.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {daos.map((dao) => (
-              <Card key={dao.id} className={`bg-gray-800 border-gray-700 hover:border-blue-500 ${dao.isUserCreated ? 'ring-2 ring-green-600 ring-opacity-50' : ''}`}>
+              <Card key={dao.id} className={`bg-card border-border hover:border-primary camo-border ${dao.isUserCreated ? 'ring-2 ring-primary ring-opacity-50' : ''}`}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className="text-xl font-bold text-white">{dao.name}</CardTitle>
-                        {dao.isUserCreated && (
-                          <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                            USER CREATED
-                          </span>
-                        )}
+                      <div className="mb-1">
+                        <CardTitle className="text-xl font-bold text-foreground">{dao.name}</CardTitle>
                       </div>
-                      <CardDescription className="text-blue-400 font-mono text-sm">{dao.symbol}</CardDescription>
+                      <CardDescription className="text-primary font-mono text-sm">{dao.symbol}</CardDescription>
                     </div>
                     {dao.logoUrl ? (
                       <img src={dao.logoUrl} alt={dao.name} className="w-12 h-12 rounded-lg" />
                     ) : (
-                      <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">{dao.symbol.slice(0, 2)}</span>
+                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                        <span className="text-muted-foreground text-xs">{dao.symbol.slice(0, 2)}</span>
                       </div>
                     )}
                   </div>
                   
-                  <CardDescription className="text-gray-300 mb-4 line-clamp-3">{dao.description}</CardDescription>
+                  <CardDescription className="text-muted-foreground mb-4 line-clamp-3">{dao.description}</CardDescription>
                   
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Created:</span>
+                      <span className="text-muted-foreground">Created:</span>
                       <span>{formatDate(dao.createdAt)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Creator:</span>
+                      <span className="text-muted-foreground">Creator:</span>
                       <span className="font-mono text-xs">{formatAddress(dao.creatorWallet)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Contract:</span>
-                      <span className="font-mono text-xs text-blue-400 hover:text-blue-300 cursor-pointer" 
+                      <span className="text-muted-foreground">Contract:</span>
+                      <span className="font-mono text-xs text-primary hover:text-primary/80 cursor-pointer" 
                             title={dao.contractAddress}
                             onClick={() => navigator.clipboard.writeText(dao.contractAddress)}>
                         {formatAddress(dao.contractAddress)}
@@ -234,9 +229,9 @@ export default function DAOSearchPage() {
                     </div>
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className="mt-4 pt-4 border-t border-border">
                     <Link href={`/dao/${dao.id}`}>
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                      <Button className="w-full bg-primary hover:bg-primary/90 camo-border">
                         View Details →
                       </Button>
                     </Link>

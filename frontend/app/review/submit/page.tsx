@@ -163,39 +163,39 @@ export default function SubmitReviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground army-pattern">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link href="/" className="text-blue-400 hover:underline mb-8 inline-block">
+        <Link href="/" className="text-primary hover:underline mb-8 inline-block">
           ← Back to Home
         </Link>
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-card border-border camo-border">
           <CardHeader>
-            <CardTitle className="text-white">Submit Your Review</CardTitle>
+            <CardTitle className="text-foreground">Submit Your Review</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <Label htmlFor="auditId" className="text-white font-semibold">Audit ID</Label>
+                <Label htmlFor="auditId" className="text-foreground font-semibold">Audit ID</Label>
                 <Input
                   id="auditId"
                   type="text"
                   value={formData.auditId}
                   onChange={(e) => setFormData({ ...formData, auditId: e.target.value })}
-                  className="mt-2 bg-gray-700 border-gray-600 text-white"
+                  className="mt-2 bg-muted border-border text-foreground"
                   placeholder="1, 2, 3..."
                   required
                   disabled={!walletAddress}
                 />
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   The ID of the audit you want to review
                 </p>
               </div>
 
           <div>
-                <Label className="text-white font-semibold">Upload Review Document</Label>
+                <Label className="text-foreground font-semibold">Upload Review Document</Label>
                 <div className="space-y-4 mt-2">
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors">
                     <input
                       type="file"
                       onChange={handleFileSelect}
@@ -207,15 +207,15 @@ export default function SubmitReviewPage() {
                     <label
                       htmlFor="file-upload"
                       className={`cursor-pointer inline-block ${
-                        (!walletAddress || uploading) ? 'opacity-50 cursor-not-allowed' : 'hover:text-blue-400'
+                        (!walletAddress || uploading) ? 'opacity-50 cursor-not-allowed' : 'hover:text-primary'
                       }`}
                     >
-                      <div className="space-y-2">
-                        <div className="text-4xl">📄</div>
-                        <p className="text-lg font-medium">
+                      <div className="space-y-3">
+                        <div className="text-5xl text-center">📄</div>
+                        <p className="text-lg font-medium text-center">
                           {uploading ? 'Uploading...' : 'Choose a file or drag it here'}
                         </p>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-muted-foreground text-center max-w-xs mx-auto">
                           PDF, JPEG, PNG, or Word documents (max 10MB)
                         </p>
                       </div>
@@ -223,13 +223,13 @@ export default function SubmitReviewPage() {
                   </div>
 
                   {uploadResult && uploadResult.success && (
-                    <Alert className="border-green-700 bg-green-900">
-                      <AlertDescription className="text-green-200">
+                    <Alert className="border-accent bg-accent/10 camo-border">
+                      <AlertDescription className="text-accent-foreground">
                         ✓ File uploaded successfully!
-                        <p className="text-sm text-gray-300 mt-2">
+                        <p className="text-sm text-muted-foreground mt-2">
                           File: {uploadResult.data.filename}
                         </p>
-                        <p className="text-sm text-gray-300">
+                        <p className="text-sm text-muted-foreground">
                           Size: {(uploadResult.data.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </AlertDescription>
@@ -237,21 +237,21 @@ export default function SubmitReviewPage() {
                   )}
 
                   {uploadResult && !uploadResult.success && (
-                    <Alert className="border-red-700 bg-red-900">
-                      <AlertDescription className="text-red-200">
+                    <Alert className="border-destructive bg-destructive/10 camo-border">
+                      <AlertDescription className="text-destructive">
                         ✗ {uploadResult.error}
                       </AlertDescription>
                     </Alert>
                   )}
 
                   {formData.ipfsHash && (
-                    <Alert className="border-blue-700 bg-blue-900">
-                      <AlertDescription className="text-blue-200">
+                    <Alert className="border-primary bg-primary/10 camo-border">
+                      <AlertDescription className="text-primary">
                         📋 Document Details
-                        <p className="text-sm text-gray-300 mt-2">
+                        <p className="text-sm text-muted-foreground mt-2">
                           IPFS Hash: {formData.ipfsHash}
                         </p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           This hash will be stored on the blockchain
                         </p>
                       </AlertDescription>
@@ -263,7 +263,7 @@ export default function SubmitReviewPage() {
               <Button
                 type="submit"
                 disabled={loading || !walletAddress || !formData.ipfsHash || uploading}
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full bg-secondary hover:bg-secondary/90 camo-border"
               >
                 {loading ? 'Preparing Transaction...' : 
                  signing ? 'Signing...' : 
@@ -274,10 +274,10 @@ export default function SubmitReviewPage() {
         </Card>
 
         {result && result.success && result.txHash && (
-          <Alert className="mt-6 border-blue-700 bg-blue-900">
-            <AlertDescription className="text-blue-200">
+          <Alert className="mt-6 border-primary bg-primary/10 camo-border">
+            <AlertDescription className="text-primary">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-white">✓ Review Submitted!</h3>
+                <h3 className="text-xl font-bold text-foreground">✓ Review Submitted!</h3>
                 <p>Transaction Hash: {result.txHash}</p>
                 <p className="text-sm">
                   Your review has been submitted to Sepolia. DAO members can now vote on its quality.
@@ -286,7 +286,7 @@ export default function SubmitReviewPage() {
                   href={`https://sepolia.etherscan.io/tx/${result.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline mt-4 inline-block"
+                  className="text-primary hover:underline mt-4 inline-block"
                 >
                   View on Etherscan →
                 </a>
@@ -296,9 +296,9 @@ export default function SubmitReviewPage() {
         )}
 
         {result && !result.success && (
-          <Alert className="mt-6 border-red-700 bg-red-900">
-            <AlertDescription className="text-red-200">
-              <h3 className="text-xl font-bold text-white mb-2">✗ Error</h3>
+          <Alert className="mt-6 border-destructive bg-destructive/10 camo-border">
+            <AlertDescription className="text-destructive">
+              <h3 className="text-xl font-bold text-foreground mb-2">✗ Error</h3>
               <p>{result.error}</p>
             </AlertDescription>
           </Alert>

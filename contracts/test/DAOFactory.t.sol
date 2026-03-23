@@ -25,9 +25,9 @@ contract DAOFactoryTest is Test {
         initialReviewers[0] = reviewer1;
         initialReviewers[1] = reviewer2;
 
-        string memory name = "Crypto Audit DAO";
-        string memory symbol = "CAD";
-        string memory description = "A DAO for crypto audits";
+        string memory name = "Test Audit DAO";
+        string memory symbol = "TAD";
+        string memory description = "A test DAO for audits";
 
         daoAddress = daoFactory.createDAO(name, symbol, initialReviewers, description);
 

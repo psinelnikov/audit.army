@@ -180,9 +180,9 @@ export default function DAOProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-background text-foreground army-pattern flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p>Loading DAO profile...</p>
         </div>
       </div>
@@ -191,12 +191,12 @@ export default function DAOProfilePage() {
 
   if (error || !dao) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-background text-foreground army-pattern flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">DAO Not Found</h1>
-          <p className="text-gray-400 mb-6">{error || 'The DAO you are looking for does not exist.'}</p>
+          <p className="text-muted-foreground mb-6">{error || 'The DAO you are looking for does not exist.'}</p>
           <Link href="/dao/search">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button className="bg-primary hover:bg-primary/90 camo-border">
               ← Back to DAO Search
             </Button>
           </Link>
@@ -206,67 +206,62 @@ export default function DAOProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground army-pattern">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Navigation */}
         <div className="mb-8">
-          <Link href="/dao/search" className="text-blue-400 hover:underline inline-block">
+          <Link href="/dao/search" className="text-primary hover:underline inline-block">
             ← Back to DAO Search
           </Link>
         </div>
 
         {/* DAO Profile Header */}
-        <Card className="bg-gray-800 border-gray-700 mb-8">
+        <Card className="bg-card border-border camo-border mb-8">
           <CardContent className="p-8">
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center space-x-4">
                 {dao.logoUrl ? (
                   <img src={dao.logoUrl} alt={dao.name} className="w-16 h-16 rounded-lg" />
                 ) : (
-                  <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-400 text-lg">{dao.symbol.slice(0, 2)}</span>
+                  <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                    <span className="text-muted-foreground text-lg">{dao.symbol.slice(0, 2)}</span>
                   </div>
                 )}
                 <div>
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="mb-2">
                     <h1 className="text-3xl font-bold">{dao.name}</h1>
-                    {dao.isUserCreated && (
-                      <span className="bg-green-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
-                        USER CREATED
-                      </span>
-                    )}
                   </div>
-                  <p className="text-blue-400 font-mono text-lg">{dao.symbol}</p>
+                  <p className="text-primary font-mono text-lg">{dao.symbol}</p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-300">Description</h3>
-                <p className="text-gray-100 leading-relaxed">{dao.description}</p>
+                <h3 className="text-lg font-semibold mb-2 text-muted-foreground">Description</h3>
+                <p className="text-foreground leading-relaxed">{dao.description}</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-700">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-border">
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-400 mb-1">Contract Address</h4>
-                  <p className="font-mono text-sm text-blue-400 hover:text-blue-300 cursor-pointer" 
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-1">Contract Address</h4>
+                  <p className="font-mono text-sm text-primary hover:text-primary/80 cursor-pointer" 
                      title={dao.contractAddress}
                      onClick={() => navigator.clipboard.writeText(dao.contractAddress)}>
                     {formatAddress(dao.contractAddress)}
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-400 mb-1">Creator</h4>
-                  <p className="font-mono text-sm text-gray-300" 
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-1">Creator</h4>
+                  <p className="font-mono text-sm text-muted-foreground" 
                      title={dao.creatorWallet}
                      onClick={() => navigator.clipboard.writeText(dao.creatorWallet)}>
                     {formatAddress(dao.creatorWallet)}
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-400 mb-1">Created</h4>
-                  <p className="text-sm text-gray-300">
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-1">Created</h4>
+                  <p className="text-sm text-muted-foreground">
                     {new Date(dao.createdAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -276,9 +271,9 @@ export default function DAOProfilePage() {
         </Card>
 
         {/* Audit Request Section */}
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-card border-border camo-border">
           <CardHeader>
-            <CardTitle className="text-white">Request an Audit</CardTitle>
+            <CardTitle className="text-foreground">Request an Audit</CardTitle>
             <CardDescription>
               Submit your smart contract for audit by this DAO's community of reviewers
             </CardDescription>
@@ -289,12 +284,12 @@ export default function DAOProfilePage() {
                 <Button
                   onClick={() => setShowAuditForm(true)}
                   disabled={!walletAddress}
-                  className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-3"
+                  className="bg-primary hover:bg-primary/90 text-lg px-8 py-3 camo-border"
                 >
                   {walletAddress ? 'Request Audit' : 'Connect Wallet to Request Audit'}
                 </Button>
                 {!walletAddress && (
-                  <p className="text-gray-400 mt-4 text-sm">
+                  <p className="text-muted-foreground mt-4 text-sm">
                     Connect your wallet to request an audit from this DAO
                   </p>
                 )}
@@ -302,7 +297,7 @@ export default function DAOProfilePage() {
             ) : (
               <form onSubmit={handleAuditRequest} className="space-y-6">
                 <div>
-                  <Label htmlFor="document" className="text-white font-semibold">Audit Document</Label>
+                  <Label htmlFor="document" className="text-foreground font-semibold">Audit Document</Label>
                   <div className="mt-2 space-y-4">
                     <div className="flex items-center space-x-4">
                       <Input
@@ -310,13 +305,13 @@ export default function DAOProfilePage() {
                         type="file"
                         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                         onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                        className="bg-gray-700 border-gray-600 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                        className="bg-muted border-border text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
                         disabled={!walletAddress || uploading}
                       />
                       <Button
                         onClick={handleFileUpload}
                         disabled={!selectedFile || uploading || !walletAddress}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-primary hover:bg-primary/90 camo-border"
                         type="button"
                       >
                         {uploading ? 'Uploading...' : 'Upload'}
@@ -324,8 +319,8 @@ export default function DAOProfilePage() {
                     </div>
                     
                     {uploadResult && (
-                      <Alert className={uploadResult.success ? 'border-green-700 bg-green-900' : 'border-red-700 bg-red-900'}>
-                        <AlertDescription className={uploadResult.success ? 'text-green-200' : 'text-red-200'}>
+                      <Alert className={uploadResult.success ? 'border-accent bg-accent/10 camo-border' : 'border-destructive bg-destructive/10 camo-border'}>
+                        <AlertDescription className={uploadResult.success ? 'text-accent-foreground' : 'text-destructive'}>
                           {uploadResult.success 
                             ? `✅ Document uploaded successfully! IPFS Hash: ${uploadResult.data?.ipfsHash?.slice(0, 20)}...`
                             : `❌ ${uploadResult.error}`
@@ -334,26 +329,26 @@ export default function DAOProfilePage() {
                       </Alert>
                     )}
                     
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                       Upload your audit documents (PDF, Word, or images). Max file size: 10MB.
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="amount" className="text-white font-semibold">Audit Fee (ETH)</Label>
+                  <Label htmlFor="amount" className="text-foreground font-semibold">Audit Fee (ETH)</Label>
                   <Input
                     id="amount"
                     type="number"
                     step="0.001"
                     value={auditFormData.amount}
                     onChange={(e) => setAuditFormData({ ...auditFormData, amount: e.target.value })}
-                    className="mt-2 bg-gray-700 border-gray-600 text-white"
+                    className="mt-2 bg-muted border-border text-foreground"
                     placeholder="0.01"
                     required
                     disabled={!walletAddress}
                   />
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Amount to lock in escrow for the audit
                   </p>
                 </div>
@@ -362,7 +357,7 @@ export default function DAOProfilePage() {
                   <Button
                     type="submit"
                     disabled={!walletAddress || !auditFormData.ipfsHash || auditLoading}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-accent hover:bg-accent/90 camo-border"
                   >
                     {auditLoading ? 'Processing...' : 'Submit Audit Request'}
                   </Button>
@@ -375,15 +370,15 @@ export default function DAOProfilePage() {
                       setUploadResult(null);
                     }}
                     variant="outline"
-                    className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                    className="camo-border"
                   >
                     Cancel
                   </Button>
                 </div>
 
                 {auditResult && (
-                  <Alert className={auditResult.success ? 'border-green-700 bg-green-900' : 'border-red-700 bg-red-900'}>
-                    <AlertDescription className={auditResult.success ? 'text-green-200' : 'text-red-200'}>
+                  <Alert className={auditResult.success ? 'border-accent bg-accent/10 camo-border' : 'border-destructive bg-destructive/10 camo-border'}>
+                    <AlertDescription className={auditResult.success ? 'text-accent-foreground' : 'text-destructive'}>
                       {auditResult.success 
                         ? `✅ Audit request submitted successfully! Transaction: ${auditResult.txHash?.slice(0, 20)}...`
                         : `❌ ${auditResult.error}`

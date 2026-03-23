@@ -2,218 +2,253 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  connectWallet,
-  getWalletState,
-  switchToSepolia,
-  isMetaMaskInstalled,
-  formatAddress,
-} from '../lib/wallet';
-import { getWalletAddress } from '../lib/api';
+import { searchDAOs, getDAOStats } from '../lib/api';
+import { formatAddress } from '../lib/wallet';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { LoginButton } from '../components/auth/LoginButton';
 import { useAuth } from '../contexts/AuthContext';
 
+interface DAO {
+  id: number;
+  name: string;
+  symbol: string;
+  description: string;
+  contractAddress: string;
+  creatorWallet: string;
+  createdAt: string;
+  logoUrl?: string;
+  isUserCreated?: boolean;
+}
+
+interface DAOStats {
+  total: number;
+  thisMonth: number;
+  thisWeek: number;
+}
+
 export default function Home() {
   const { authState } = useAuth();
-  const [walletState, setWalletState] = useState<{
-    isConnected: boolean;
-    address: string | null;
-    chainId: number | null;
-    network: string | null;
-  }>({
-    isConnected: false,
-    address: null,
-    chainId: null,
-    network: null,
-  });
+  const [daos, setDAOs] = useState<DAO[]>([]);
+  const [stats, setStats] = useState<DAOStats | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    checkWalletConnection();
+    loadDAOs();
+    loadStats();
   }, []);
 
-  const checkWalletConnection = async () => {
-    try {
-      const state = await getWalletState();
-      setWalletState(state);
-    } catch (err) {
-      console.error('Error checking wallet:', err);
-    }
-  };
-
-  const handleConnectWallet = async () => {
-    if (!isMetaMaskInstalled()) {
-      setError('Please install MetaMask to use this application');
-      window.open('https://metamask.io/download/', '_blank');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const state = await connectWallet();
-      setWalletState(state);
-
-      // Check if on Sepolia, if not, switch
-      if (state.chainId !== 11155111) {
-        await switchToSepolia();
-        // Update chain info after switch
-        setTimeout(async () => {
-          const newState = await getWalletState();
-          setWalletState(newState);
-        }, 1000);
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchTerm !== undefined) {
+        loadDAOs(searchTerm);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to connect wallet');
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const loadDAOs = async (search?: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await searchDAOs(search);
+      if (response.success) {
+        setDAOs(response.data.daos);
+      } else {
+        setError(response.error || 'Failed to load DAOs');
+      }
+    } catch (err) {
+      setError('Failed to load DAOs');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSwitchNetwork = async () => {
-    setLoading(true);
-    setError(null);
-
+  const loadStats = async () => {
     try {
-      await switchToSepolia();
-      setTimeout(async () => {
-        const state = await getWalletState();
-        setWalletState(state);
-      }, 1000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to switch network');
-    } finally {
-      setLoading(false);
+      const response = await getDAOStats();
+      if (response.success) {
+        setStats(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to load stats:', err);
     }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background text-foreground army-pattern">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-12">
-          <h1 className="text-3xl font-bold">🎖️ Audit Army</h1>
+          <div>
+            <h1 className="text-4xl font-bold mb-2 camo-text">🎖️ Audit Army</h1>
+            <p className="text-muted-foreground">Explore DAOs</p>
+          </div>
           
           <div className="flex items-center gap-4">
             <LoginButton />
           </div>
         </div>
 
-        {error && (
-          <Alert className="mb-6 border-red-700 bg-red-900">
-            <AlertDescription className="text-red-200">
-              {error}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="text-center py-20">
-          <h2 className="text-5xl font-bold mb-6">Create Your Own Review DAOs</h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Build decentralized auditing communities for any industry. Like having multiple specialized Better Business Bureaus.
-          </p>
-
-          <div className="mb-8">
-            <Link
-              href="/dao/search"
-            >
-              <Button variant="outline" className="bg-gray-700 hover:bg-gray-600">
-                🔍 Explore Existing DAOs
-              </Button>
-            </Link>
+        {/* Stats Section */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card className="bg-card border-border camo-border">
+              <CardContent className="p-6">
+                <CardTitle className="text-2xl font-bold text-primary">{stats.total}</CardTitle>
+                <CardDescription className="text-muted-foreground">Total DAOs</CardDescription>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border camo-border">
+              <CardContent className="p-6">
+                <CardTitle className="text-2xl font-bold text-accent">{stats.thisMonth}</CardTitle>
+                <CardDescription className="text-muted-foreground">Created This Month</CardDescription>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border camo-border">
+              <CardContent className="p-6">
+                <CardTitle className="text-2xl font-bold text-secondary">{stats.thisWeek}</CardTitle>
+                <CardDescription className="text-muted-foreground">Created This Week</CardDescription>
+              </CardContent>
+            </Card>
           </div>
-
-          {!authState.isAuthenticated && (
-          <Alert className="mb-8 border-blue-700 bg-blue-900">
-            <AlertDescription className="text-blue-200">
-              🔐 Please connect your wallet to access the Audit Army platform
-            </AlertDescription>
-          </Alert>
         )}
 
-        {authState.isAuthenticated && walletState.network !== 'Sepolia Testnet' && (
-          <Alert className="mb-8 border-yellow-700 bg-yellow-900">
-            <AlertDescription className="text-yellow-200">
-              ⚠️ Please switch to Sepolia testnet to use this prototype
-              <div className="mt-4">
-                <Button
-                  onClick={handleSwitchNetwork}
-                  disabled={loading}
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                >
-                  {loading ? 'Switching...' : 'Switch to Sepolia'}
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card className={`${authState.isAuthenticated ? 'bg-green-600 hover:bg-green-700 border-green-600' : 'bg-gray-600 border-gray-600 opacity-50'}`}>
-              <Link href={authState.isAuthenticated ? "/dao/create" : "#"} prefetch={false}>
-                <CardContent className="p-6">
-                  <CardTitle className="text-white text-2xl font-bold mb-2">Create DAO</CardTitle>
-                  <CardDescription className="text-gray-200">
-                    Launch your own specialized DAO for crypto, healthcare, finance, or any industry
-                  </CardDescription>
-                  {!authState.isAuthenticated && (
-                    <div className="mt-2 text-xs text-yellow-300">
-                      🔐 Authentication required
-                    </div>
-                  )}
-                </CardContent>
-              </Link>
-            </Card>
-
-            <Card className={`${authState.isAuthenticated ? 'bg-blue-600 hover:bg-blue-700 border-blue-600' : 'bg-gray-600 border-gray-600 opacity-50'}`}>
-              <Link href={authState.isAuthenticated ? "/audit/request" : "#"} prefetch={false}>
-                <CardContent className="p-6">
-                  <CardTitle className="text-white text-2xl font-bold mb-2">Request Audit</CardTitle>
-                  <CardDescription className="text-gray-200">
-                    Submit audit requests and lock payment in smart contract escrow
-                  </CardDescription>
-                  {!authState.isAuthenticated && (
-                    <div className="mt-2 text-xs text-yellow-300">
-                      🔐 Authentication required
-                    </div>
-                  )}
-                </CardContent>
-              </Link>
-            </Card>
-
-            <Card className={`${authState.isAuthenticated ? 'bg-purple-600 hover:bg-purple-700 border-purple-600' : 'bg-gray-600 border-gray-600 opacity-50'}`}>
-              <Link href={authState.isAuthenticated ? "/review/submit" : "#"} prefetch={false}>
-                <CardContent className="p-6">
-                  <CardTitle className="text-white text-2xl font-bold mb-2">Submit Review</CardTitle>
-                  <CardDescription className="text-gray-200">
-                    As a reviewer, submit your audit reports and earn from quality work
-                  </CardDescription>
-                  {!authState.isAuthenticated && (
-                    <div className="mt-2 text-xs text-yellow-300">
-                      🔐 Authentication required
-                    </div>
-                  )}
-                </CardContent>
-              </Link>
-            </Card>
+        {/* Search Section */}
+        <div className="mb-8">
+          <div className="relative">
+            <Input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search DAOs by name, symbol, or description..."
+              className="w-full p-4 pl-12 bg-muted border-border text-foreground placeholder-muted-foreground focus:border-primary"
+            />
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
           </div>
         </div>
 
-        <div className="mt-20 text-center text-gray-400">
-          <p className="text-sm">
-            ⚠️ This is a working prototype. Do not use with real money.
-          </p>
-          <p className="text-sm mt-2">
-            Smart contracts deployed to Sepolia testnet. Get test ETH at{' '}
-            <a href="https://sepoliafaucet.com/" className="text-blue-400 hover:underline">
-              Sepolia Faucet
-            </a>
-          </p>
+        {/* Create DAO CTA */}
+        <Card className="mb-8 camo-bg border-primary camo-border">
+          <CardContent className="p-8 text-center">
+            <CardTitle className="text-2xl font-bold mb-4 text-foreground">Create Your Own DAO</CardTitle>
+            <CardDescription className="mb-6 text-muted-foreground">
+              Start your decentralized auditing community today
+            </CardDescription>
+            <Link href="/dao/create">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 camo-border">
+                Create DAO →
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* DAOs List */}
+        {loading && (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="mt-4 text-muted-foreground">Loading DAOs...</p>
+          </div>
+        )}
+
+        {error && (
+          <Alert className="border-destructive bg-destructive/10 camo-border mb-8">
+            <AlertDescription className="text-destructive">
+              <h3 className="text-xl font-bold mb-2">Error</h3>
+              <p>{error}</p>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!loading && !error && daos.length === 0 && (
+          <Card className="bg-card border-border camo-border">
+            <CardContent className="p-12 text-center">
+              <CardTitle className="text-xl font-semibold mb-2 text-foreground">No DAOs Found</CardTitle>
+              <CardDescription className="text-muted-foreground mb-6">
+                {searchTerm ? 'Try adjusting your search terms' : 'Be the first to create a DAO!'}
+              </CardDescription>
+              {!searchTerm && (
+                <Link href="/dao/create">
+                  <Button className="bg-primary hover:bg-primary/90 camo-border">
+                    Create DAO
+                  </Button>
+                </Link>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {!loading && !error && daos.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {daos.map((dao) => (
+              <Card key={dao.id} className={`bg-card border-border hover:border-primary camo-border ${dao.isUserCreated ? 'ring-2 ring-primary ring-opacity-50' : ''}`}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="mb-1">
+                        <CardTitle className="text-xl font-bold text-foreground">{dao.name}</CardTitle>
+                      </div>
+                      <CardDescription className="text-primary font-mono text-sm">{dao.symbol}</CardDescription>
+                    </div>
+                    {dao.logoUrl ? (
+                      <img src={dao.logoUrl} alt={dao.name} className="w-12 h-12 rounded-lg" />
+                    ) : (
+                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                        <span className="text-muted-foreground text-xs">{dao.symbol.slice(0, 2)}</span>
+                      </div>
+                    )}
                   </div>
+                  
+                  <CardDescription className="text-muted-foreground mb-4 line-clamp-3">{dao.description}</CardDescription>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Created:</span>
+                      <span>{formatDate(dao.createdAt)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Creator:</span>
+                      <span className="font-mono text-xs">{formatAddress(dao.creatorWallet)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Contract:</span>
+                      <span className="font-mono text-xs text-primary hover:text-primary/80 cursor-pointer" 
+                            title={dao.contractAddress}
+                            onClick={() => navigator.clipboard.writeText(dao.contractAddress)}>
+                        {formatAddress(dao.contractAddress)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <Link href={`/dao/${dao.id}`}>
+                      <Button className="w-full bg-primary hover:bg-primary/90 camo-border">
+                        View Details →
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
