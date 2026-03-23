@@ -2,11 +2,20 @@
  * Wallet utilities for web3 interactions
  */
 
+import { ethers } from 'ethers';
+import { createSiweMessage } from './siwe-fixed';
+
 export interface WalletState {
   isConnected: boolean;
   address: string | null;
   chainId: number | null;
   network: string | null;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  address: string | null;
+  token: string | null;
 }
 
 /**
@@ -250,5 +259,157 @@ export async function getTransactionReceipt(txHash: string) {
   } catch (error) {
     console.error('Error getting transaction receipt:', error);
     throw new Error('Failed to get transaction receipt');
+  }
+}
+
+/**
+ * Sign message with MetaMask
+ */
+export async function signMessage(message: string): Promise<string> {
+  if (typeof window === 'undefined' || !(window as any).ethereum) {
+    throw new Error('Please install MetaMask');
+  }
+
+  try {
+    const signature = await (window as any).ethereum.request({
+      method: 'personal_sign',
+      params: [message, await getConnectedAddress()],
+    });
+
+    return signature;
+  } catch (error: any) {
+    console.error('Error signing message:', error);
+    throw new Error(error.message || 'Failed to sign message');
+  }
+}
+
+/**
+ * Get connected address
+ */
+async function getConnectedAddress(): Promise<string> {
+  const accounts = await (window as any).ethereum.request({
+    method: 'eth_accounts',
+  });
+
+  if (accounts.length === 0) {
+    throw new Error('No connected account');
+  }
+
+  return accounts[0];
+}
+
+/**
+ * Authenticate with SIWE
+ */
+export async function authenticateWithSiwe(): Promise<AuthState> {
+  if (typeof window === 'undefined' || !(window as any).ethereum) {
+    throw new Error('Please install MetaMask to use this application');
+  }
+
+  try {
+    // Get current address
+    const walletState = await getWalletState();
+    if (!walletState.address) {
+      throw new Error('No wallet connected');
+    }
+
+    // Get nonce from backend
+    console.log('Requesting nonce for address:', walletState.address);
+    const nonceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/nonce`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: walletState.address }),
+    });
+
+    console.log('Nonce response status:', nonceResponse.status);
+    const nonceData = await nonceResponse.json();
+    console.log('Nonce response data:', nonceData);
+    if (!nonceData.success) {
+      throw new Error(nonceData.error || 'Failed to get nonce');
+    }
+
+    // Create SIWE message
+    const domain = window.location.host;
+    const uri = window.location.origin;
+    const message = createSiweMessage(walletState.address, nonceData.data.nonce, domain, uri);
+    
+    console.log('Generated SIWE message:', message);
+    console.log('Wallet address:', walletState.address);
+    console.log('Nonce:', nonceData.data.nonce);
+    console.log('Domain:', domain);
+    console.log('URI:', uri);
+
+    // Sign message
+    const signature = await signMessage(message);
+    console.log('Generated signature:', signature);
+
+    // Verify signature with backend
+    console.log('Sending to backend:', { message, signature });
+    const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, signature }),
+    });
+
+    const verifyData = await verifyResponse.json();
+    console.log('Backend response:', verifyData);
+    if (!verifyData.success) {
+      throw new Error(verifyData.error || 'Failed to verify signature');
+    }
+
+    return {
+      isAuthenticated: true,
+      address: verifyData.data.address,
+      token: verifyData.data.token,
+    };
+  } catch (error: any) {
+    console.error('Error authenticating with SIWE:', error);
+    throw error;
+  }
+}
+
+/**
+ * Logout from SIWE session
+ */
+export async function logoutFromSiwe(token: string): Promise<void> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/logout`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to logout');
+    }
+  } catch (error: any) {
+    console.error('Error logging out:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get current authenticated user
+ */
+export async function getCurrentUser(token: string): Promise<{ address: string; createdAt: string; lastLogin: string | null }> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/me`, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to get user info');
+    }
+
+    return data.data;
+  } catch (error: any) {
+    console.error('Error getting current user:', error);
+    throw error;
   }
 }

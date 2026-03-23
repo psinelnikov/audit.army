@@ -13,8 +13,11 @@ import { getWalletAddress } from '../lib/api';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { LoginButton } from '../components/auth/LoginButton';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Home() {
+  const { authState } = useAuth();
   const [walletState, setWalletState] = useState<{
     isConnected: boolean;
     address: string | null;
@@ -96,31 +99,7 @@ export default function Home() {
           <h1 className="text-3xl font-bold">🎖️ Audit Army</h1>
           
           <div className="flex items-center gap-4">
-            {walletState.isConnected ? (
-              <div className="text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400">● Connected</span>
-                  <span className="text-gray-400">
-                    {formatAddress(walletState.address || '')}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    walletState.network === 'Sepolia Testnet'
-                      ? 'bg-green-600'
-                      : 'bg-red-600'
-                  }`}>
-                    {walletState.network || 'Unknown'}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <Button
-                onClick={handleConnectWallet}
-                disabled={loading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {loading ? 'Connecting...' : 'Connect Wallet'}
-              </Button>
-            )}
+            <LoginButton />
           </div>
         </div>
 
@@ -148,53 +127,76 @@ export default function Home() {
             </Link>
           </div>
 
-          {walletState.isConnected && walletState.network !== 'Sepolia Testnet' && (
-            <Alert className="mb-8 border-yellow-700 bg-yellow-900">
-              <AlertDescription className="text-yellow-200">
-                ⚠️ Please switch to Sepolia testnet to use this prototype
-                <div className="mt-4">
-                  <Button
-                    onClick={handleSwitchNetwork}
-                    disabled={loading}
-                    className="bg-yellow-600 hover:bg-yellow-700"
-                  >
-                    {loading ? 'Switching...' : 'Switch to Sepolia'}
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+          {!authState.isAuthenticated && (
+          <Alert className="mb-8 border-blue-700 bg-blue-900">
+            <AlertDescription className="text-blue-200">
+              🔐 Please connect your wallet to access the Audit Army platform
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {authState.isAuthenticated && walletState.network !== 'Sepolia Testnet' && (
+          <Alert className="mb-8 border-yellow-700 bg-yellow-900">
+            <AlertDescription className="text-yellow-200">
+              ⚠️ Please switch to Sepolia testnet to use this prototype
+              <div className="mt-4">
+                <Button
+                  onClick={handleSwitchNetwork}
+                  disabled={loading}
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                >
+                  {loading ? 'Switching...' : 'Switch to Sepolia'}
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <Card className="bg-green-600 hover:bg-green-700 border-green-600">
-              <Link href="/dao/create" prefetch={false}>
+            <Card className={`${authState.isAuthenticated ? 'bg-green-600 hover:bg-green-700 border-green-600' : 'bg-gray-600 border-gray-600 opacity-50'}`}>
+              <Link href={authState.isAuthenticated ? "/dao/create" : "#"} prefetch={false}>
                 <CardContent className="p-6">
                   <CardTitle className="text-white text-2xl font-bold mb-2">Create DAO</CardTitle>
                   <CardDescription className="text-gray-200">
                     Launch your own specialized DAO for crypto, healthcare, finance, or any industry
                   </CardDescription>
+                  {!authState.isAuthenticated && (
+                    <div className="mt-2 text-xs text-yellow-300">
+                      🔐 Authentication required
+                    </div>
+                  )}
                 </CardContent>
               </Link>
             </Card>
 
-            <Card className="bg-blue-600 hover:bg-blue-700 border-blue-600">
-              <Link href="/audit/request" prefetch={false}>
+            <Card className={`${authState.isAuthenticated ? 'bg-blue-600 hover:bg-blue-700 border-blue-600' : 'bg-gray-600 border-gray-600 opacity-50'}`}>
+              <Link href={authState.isAuthenticated ? "/audit/request" : "#"} prefetch={false}>
                 <CardContent className="p-6">
                   <CardTitle className="text-white text-2xl font-bold mb-2">Request Audit</CardTitle>
                   <CardDescription className="text-gray-200">
                     Submit audit requests and lock payment in smart contract escrow
                   </CardDescription>
+                  {!authState.isAuthenticated && (
+                    <div className="mt-2 text-xs text-yellow-300">
+                      🔐 Authentication required
+                    </div>
+                  )}
                 </CardContent>
               </Link>
             </Card>
 
-            <Card className="bg-purple-600 hover:bg-purple-700 border-purple-600">
-              <Link href="/review/submit" prefetch={false}>
+            <Card className={`${authState.isAuthenticated ? 'bg-purple-600 hover:bg-purple-700 border-purple-600' : 'bg-gray-600 border-gray-600 opacity-50'}`}>
+              <Link href={authState.isAuthenticated ? "/review/submit" : "#"} prefetch={false}>
                 <CardContent className="p-6">
                   <CardTitle className="text-white text-2xl font-bold mb-2">Submit Review</CardTitle>
                   <CardDescription className="text-gray-200">
                     As a reviewer, submit your audit reports and earn from quality work
                   </CardDescription>
+                  {!authState.isAuthenticated && (
+                    <div className="mt-2 text-xs text-yellow-300">
+                      🔐 Authentication required
+                    </div>
+                  )}
                 </CardContent>
               </Link>
             </Card>
@@ -211,10 +213,7 @@ export default function Home() {
               Sepolia Faucet
             </a>
           </p>
-          <p className="text-sm mt-4">
-            🔒 Your private key is NEVER exposed. All transactions are signed securely in your wallet.
-          </p>
-        </div>
+                  </div>
       </div>
     </div>
   );

@@ -253,16 +253,6 @@ export default function CreateDAOPage() {
           </Alert>
         )}
 
-        <Card className="mt-8 bg-gray-800 border-gray-700">
-          <CardContent className="p-4">
-            <h4 className="font-semibold mb-2 text-white">🔒 Security Information</h4>
-            <p className="text-sm text-gray-300">
-              Your private key is NEVER exposed or transmitted to the server.
-              All transactions are signed directly in your MetaMask wallet.
-              This is the secure, standard way web3 applications work.
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

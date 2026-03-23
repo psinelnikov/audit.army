@@ -263,16 +263,6 @@ export default function RequestAuditPage() {
           </Alert>
         )}
 
-        <Card className="mt-8 bg-gray-800 border-gray-700">
-          <CardContent className="p-4">
-            <h4 className="font-semibold mb-2 text-white">🔒 Security Information</h4>
-            <p className="text-sm text-gray-300">
-              Your private key is NEVER exposed or transmitted to the server.
-              The payment is locked in the smart contract escrow.
-              You sign the transaction directly in your MetaMask wallet.
-            </p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

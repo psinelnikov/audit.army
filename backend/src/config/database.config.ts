@@ -4,7 +4,16 @@ import { DAO } from '../modules/dao/entities/dao.entity';
 import { Reviewer } from '../modules/reviewer/entities/reviewer.entity';
 import { Audit } from '../modules/audit/entities/audit.entity';
 
-export const databaseConfig: TypeOrmModuleOptions = {
+// Use SQLite for development/testing when PostgreSQL is not available
+const useSqlite = process.env.NODE_ENV !== 'production' && !process.env.DATABASE_HOST;
+
+export const databaseConfig: TypeOrmModuleOptions = useSqlite ? {
+  type: 'sqlite',
+  database: ':memory:',
+  entities: [User], // Only include User entity for SIWE testing
+  synchronize: true,
+  logging: true,
+} : {
   type: 'postgres',
   host: process.env.DATABASE_HOST || 'localhost',
   port: parseInt(process.env.DATABASE_PORT || '5432'),

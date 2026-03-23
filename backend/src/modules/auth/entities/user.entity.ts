@@ -11,8 +11,8 @@ export class User {
   @Column()
   nonce: string;
 
-  @Column({ nullable: true })
-  sessionToken: string;
+  @Column({ nullable: true, type: 'text' })
+  sessionToken: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
