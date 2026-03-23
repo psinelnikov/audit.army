@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { prepareCreateAudit, uploadDocument } from '../../../lib/api';
+import { getAuditsByDAO, checkDAOReviewer } from '../../../lib/api';
 import {
   signAndSendTransaction,
   waitForTransaction,
@@ -15,6 +15,7 @@ import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Alert, AlertDescription } from '../../../components/ui/alert';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface DAOProfile {
   id: number;
@@ -28,41 +29,53 @@ interface DAOProfile {
   isUserCreated?: boolean;
 }
 
+interface Audit {
+  id: number;
+  dao: string;
+  requester: string;
+  assignedReviewer?: string;
+  amount: string;
+  ipfsHash: string;
+  status: number; // 0=PENDING, 1=IN_REVIEW, 2=COMPLETED, etc.
+  createdAt: number;
+  completedAt?: number;
+  reviewerPaid: boolean;
+  daoPaid: boolean;
+}
+
 export default function DAOProfilePage() {
   const params = useParams();
   const router = useRouter();
   const daoId = params.id as string;
+  const { authState } = useAuth();
 
   const [dao, setDAO] = useState<DAOProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  
-  // Audit request form state
-  const [showAuditForm, setShowAuditForm] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<{
-    success: boolean;
-    data?: any;
-    error?: string;
-  } | null>(null);
-  const [auditFormData, setAuditFormData] = useState({
-    ipfsHash: '',
-    amount: '0.01',
-  });
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditResult, setAuditResult] = useState<{
-    success: boolean;
-    data?: any;
-    error?: string;
-    txHash?: string;
-  } | null>(null);
+  const [audits, setAudits] = useState<Audit[]>([]);
+  const [isDAOReviewer, setIsDAOReviewer] = useState(false);
+  const [auditsLoading, setAuditsLoading] = useState(true);
 
   useEffect(() => {
     fetchDAOProfile();
     checkWallet();
   }, [daoId]);
+
+  useEffect(() => {
+    if (dao) {
+      fetchDAODetailsFromContract(); // Try to fetch real details if we have placeholder data
+    }
+  }, [dao]);
+
+  useEffect(() => {
+    if (dao && authState.isAuthenticated && authState.address) {
+      fetchAudits();
+      checkDAOReviewerStatus();
+    } else if (dao) {
+      fetchAudits(); // Still fetch audits for non-authenticated users
+    }
+  }, [dao, authState]);
 
   const fetchDAOProfile = async () => {
     try {
@@ -87,6 +100,38 @@ export default function DAOProfilePage() {
     }
   };
 
+  const fetchDAODetailsFromContract = async () => {
+    if (!dao) return;
+    
+    try {
+      // If the DAO has placeholder data, try to fetch real details from contract
+      if (dao.creatorWallet === '0x0000000000000000000000000000000000000000' || 
+          dao.description.includes('A DAO created by the community') ||
+          dao.name.includes('User Created DAO')) {
+        
+        // Try to fetch real details from the contract
+        const response = await fetch(`/api/dao/details/${dao.contractAddress}`);
+        if (response.ok) {
+          const details = await response.json();
+          if (details.success) {
+            // Update the DAO with real details
+            setDAO({
+              ...dao,
+              name: details.data.name || dao.name,
+              symbol: details.data.symbol || dao.symbol,
+              description: details.data.description || dao.description,
+              creatorWallet: details.data.creator || dao.creatorWallet,
+              createdAt: details.data.createdAt || dao.createdAt
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching DAO details from contract:', error);
+      // Don't update the DAO if we can't fetch details
+    }
+  };
+
   const checkWallet = async () => {
     try {
       const state = await getWalletState();
@@ -96,91 +141,51 @@ export default function DAOProfilePage() {
     }
   };
 
-  const handleFileUpload = async () => {
-    if (!selectedFile) {
-      setUploadResult({ success: false, error: 'Please select a file first' });
-      return;
-    }
-
-    setUploading(true);
-    setUploadResult(null);
-
+  const fetchAudits = async () => {
+    if (!dao) return;
+    
     try {
-      const response = await uploadDocument(selectedFile);
+      setAuditsLoading(true);
+      const response = await getAuditsByDAO(dao.contractAddress);
       
       if (response.success) {
-        setUploadResult(response);
-        setAuditFormData({ ...auditFormData, ipfsHash: response.data.ipfsHash });
+        setAudits(response.data.audits);
       } else {
-        setUploadResult({ success: false, error: response.error || 'Upload failed' });
+        console.error('Failed to fetch audits:', response.error);
       }
     } catch (error) {
-      setUploadResult({ success: false, error: 'Upload failed' });
+      console.error('Error fetching audits:', error);
     } finally {
-      setUploading(false);
+      setAuditsLoading(false);
     }
   };
 
-  const handleAuditRequest = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setAuditLoading(true);
-    setAuditResult(null);
-
+  const checkDAOReviewerStatus = async () => {
+    if (!dao || !authState.address) return;
+    
     try {
-      if (!walletAddress) {
-        throw new Error('Please connect your wallet first');
+      const response = await checkDAOReviewer(dao.contractAddress, authState.address);
+      if (response.success) {
+        setIsDAOReviewer(response.data.isReviewer);
+      } else {
+        console.error('Failed to check DAO reviewer status:', response.error);
       }
-
-      if (!auditFormData.ipfsHash) {
-        throw new Error('Please upload a document first');
-      }
-
-      // Prepare transaction
-      const response = await prepareCreateAudit({
-        daoAddress: dao!.contractAddress,
-        ipfsHash: auditFormData.ipfsHash,
-        amount: auditFormData.amount,
-        walletAddress,
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to prepare transaction');
-      }
-
-      // Sign and send transaction
-      const txHash = await signAndSendTransaction(response.data);
-
-      // Wait for transaction confirmation
-      setAuditResult({
-        success: true,
-        txHash,
-      });
-
-      await waitForTransaction(txHash);
-
-      setAuditResult({
-        success: true,
-        data: { txHash },
-      });
-
-      // Reset form
-      setShowAuditForm(false);
-      setSelectedFile(null);
-      setAuditFormData({ ipfsHash: '', amount: '0.01' });
-      setUploadResult(null);
-    } catch (error: any) {
-      setAuditResult({
-        success: false,
-        error: error.message || 'Failed to request audit',
-      });
-    } finally {
-      setAuditLoading(false);
+    } catch (error) {
+      console.error('Error checking DAO reviewer status:', error);
     }
+  };
+
+  const getPendingAudits = () => audits.filter(audit => audit.status === 0);
+  const getInReviewAudits = () => audits.filter(audit => audit.status === 1);
+  const getCompletedAudits = () => audits.filter(audit => audit.status === 2);
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp * 1000).toLocaleDateString();
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground army-pattern flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p>Loading DAO profile...</p>
@@ -191,7 +196,7 @@ export default function DAOProfilePage() {
 
   if (error || !dao) {
     return (
-      <div className="min-h-screen bg-background text-foreground army-pattern flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">DAO Not Found</h1>
           <p className="text-muted-foreground mb-6">{error || 'The DAO you are looking for does not exist.'}</p>
@@ -206,7 +211,7 @@ export default function DAOProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground army-pattern">
+    <div className="army-pattern">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Navigation */}
         <div className="mb-8">
@@ -270,24 +275,105 @@ export default function DAOProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Audit Request Section */}
+        {/* Conditional Content Section */}
         <Card className="bg-card border-border camo-border">
           <CardHeader>
-            <CardTitle className="text-foreground">Request an Audit</CardTitle>
+            <CardTitle className="text-foreground">
+              {authState.isAuthenticated && isDAOReviewer ? 'DAO Review Management' : 
+               authState.isAuthenticated ? 'Request an Audit' : 
+               'DAO Activity'}
+            </CardTitle>
             <CardDescription>
-              Submit your smart contract for audit by this DAO's community of reviewers
+              {authState.isAuthenticated && isDAOReviewer 
+                ? 'Manage pending and in-progress reviews for this DAO'
+                : authState.isAuthenticated 
+                  ? 'Submit your smart contract for audit by this DAO\'s community of reviewers'
+                  : 'View the audit activity of this DAO'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {!showAuditForm ? (
+            {authState.isAuthenticated && isDAOReviewer ? (
+              // DAO Reviewer View - Show pending and in-review audits
+              <div className="space-y-8">
+                {/* Pending Audits */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Pending Reviews</h3>
+                  {getPendingAudits().length === 0 ? (
+                    <p className="text-muted-foreground">No pending audits at this time.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {getPendingAudits().map((audit) => (
+                        <Card key={audit.id} className="bg-muted border-border">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-mono text-sm text-primary">Audit #{audit.id}</p>
+                                <p className="text-sm text-muted-foreground">Requester: {formatAddress(audit.requester)}</p>
+                                <p className="text-sm text-muted-foreground">Amount: {audit.amount} ETH</p>
+                                <p className="text-sm text-muted-foreground">Requested: {formatDate(audit.createdAt)}</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">PENDING</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* In-Review Audits */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">In-Progress Reviews</h3>
+                  {getInReviewAudits().length === 0 ? (
+                    <p className="text-muted-foreground">No audits currently in review.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {getInReviewAudits().map((audit) => (
+                        <Card key={audit.id} className="bg-muted border-border">
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-mono text-sm text-primary">Audit #{audit.id}</p>
+                                <p className="text-sm text-muted-foreground">Requester: {formatAddress(audit.requester)}</p>
+                                <p className="text-sm text-muted-foreground">Reviewer: {audit.assignedReviewer ? formatAddress(audit.assignedReviewer) : 'Not assigned'}</p>
+                                <p className="text-sm text-muted-foreground">Amount: {audit.amount} ETH</p>
+                                <p className="text-sm text-muted-foreground">Started: {formatDate(audit.createdAt)}</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">IN REVIEW</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : authState.isAuthenticated ? (
+              // Regular authenticated user - Show audit request button
               <div className="text-center py-8">
-                <Button
-                  onClick={() => setShowAuditForm(true)}
-                  disabled={!walletAddress}
-                  className="bg-primary hover:bg-primary/90 text-lg px-8 py-3 camo-border"
-                >
-                  {walletAddress ? 'Request Audit' : 'Connect Wallet to Request Audit'}
-                </Button>
+                {dao.contractAddress ? (
+                  <Link href={`/audit/request?dao=${encodeURIComponent(dao.contractAddress)}&name=${encodeURIComponent(dao.name)}`}>
+                    <Button
+                      disabled={!walletAddress}
+                      className="bg-primary hover:bg-primary/90 text-lg px-8 py-3 camo-border"
+                    >
+                      {walletAddress ? 'Request Audit' : 'Connect Wallet to Request Audit'}
+                    </Button>
+                  </Link>
+                ) : (
+                  <div>
+                    <Button disabled className="bg-muted text-muted-foreground text-lg px-8 py-3 camo-border">
+                      DAO Loading...
+                    </Button>
+                    <p className="text-muted-foreground mt-4 text-sm">
+                      Please wait for DAO information to load
+                    </p>
+                  </div>
+                )}
                 {!walletAddress && (
                   <p className="text-muted-foreground mt-4 text-sm">
                     Connect your wallet to request an audit from this DAO
@@ -295,98 +381,53 @@ export default function DAOProfilePage() {
                 )}
               </div>
             ) : (
-              <form onSubmit={handleAuditRequest} className="space-y-6">
-                <div>
-                  <Label htmlFor="document" className="text-foreground font-semibold">Audit Document</Label>
-                  <div className="mt-2 space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <Input
-                        id="document"
-                        type="file"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                        className="bg-muted border-border text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                        disabled={!walletAddress || uploading}
-                      />
-                      <Button
-                        onClick={handleFileUpload}
-                        disabled={!selectedFile || uploading || !walletAddress}
-                        className="bg-primary hover:bg-primary/90 camo-border"
-                        type="button"
-                      >
-                        {uploading ? 'Uploading...' : 'Upload'}
-                      </Button>
-                    </div>
-                    
-                    {uploadResult && (
-                      <Alert className={uploadResult.success ? 'border-accent bg-accent/10 camo-border' : 'border-destructive bg-destructive/10 camo-border'}>
-                        <AlertDescription className={uploadResult.success ? 'text-accent-foreground' : 'text-destructive'}>
-                          {uploadResult.success 
-                            ? `✅ Document uploaded successfully! IPFS Hash: ${uploadResult.data?.ipfsHash?.slice(0, 20)}...`
-                            : `❌ ${uploadResult.error}`
-                          }
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    <p className="text-sm text-muted-foreground">
-                      Upload your audit documents (PDF, Word, or images). Max file size: 10MB.
-                    </p>
-                  </div>
-                </div>
+              // Non-authenticated user - Show message to sign in
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">
+                  Please sign in to request an audit from this DAO or view detailed audit information.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                <div>
-                  <Label htmlFor="amount" className="text-foreground font-semibold">Audit Fee (ETH)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.001"
-                    value={auditFormData.amount}
-                    onChange={(e) => setAuditFormData({ ...auditFormData, amount: e.target.value })}
-                    className="mt-2 bg-muted border-border text-foreground"
-                    placeholder="0.01"
-                    required
-                    disabled={!walletAddress}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Amount to lock in escrow for the audit
-                  </p>
-                </div>
-
-                <div className="flex space-x-4">
-                  <Button
-                    type="submit"
-                    disabled={!walletAddress || !auditFormData.ipfsHash || auditLoading}
-                    className="bg-accent hover:bg-accent/90 camo-border"
-                  >
-                    {auditLoading ? 'Processing...' : 'Submit Audit Request'}
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      setShowAuditForm(false);
-                      setSelectedFile(null);
-                      setAuditFormData({ ipfsHash: '', amount: '0.01' });
-                      setUploadResult(null);
-                    }}
-                    variant="outline"
-                    className="camo-border"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-
-                {auditResult && (
-                  <Alert className={auditResult.success ? 'border-accent bg-accent/10 camo-border' : 'border-destructive bg-destructive/10 camo-border'}>
-                    <AlertDescription className={auditResult.success ? 'text-accent-foreground' : 'text-destructive'}>
-                      {auditResult.success 
-                        ? `✅ Audit request submitted successfully! Transaction: ${auditResult.txHash?.slice(0, 20)}...`
-                        : `❌ ${auditResult.error}`
-                      }
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </form>
+        {/* Completed Reviews - Visible to everyone */}
+        <Card className="bg-card border-border camo-border">
+          <CardHeader>
+            <CardTitle className="text-foreground">Completed Reviews</CardTitle>
+            <CardDescription>
+              Past audits completed by this DAO community
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {auditsLoading ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="text-muted-foreground mt-2">Loading completed reviews...</p>
+              </div>
+            ) : getCompletedAudits().length === 0 ? (
+              <p className="text-muted-foreground">No completed audits yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {getCompletedAudits().map((audit) => (
+                  <Card key={audit.id} className="bg-muted border-border">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-mono text-sm text-primary">Audit #{audit.id}</p>
+                          <p className="text-sm text-muted-foreground">Requester: {formatAddress(audit.requester)}</p>
+                          <p className="text-sm text-muted-foreground">Reviewer: {audit.assignedReviewer ? formatAddress(audit.assignedReviewer) : 'N/A'}</p>
+                          <p className="text-sm text-muted-foreground">Amount: {audit.amount} ETH</p>
+                          <p className="text-sm text-muted-foreground">Completed: {audit.completedAt ? formatDate(audit.completedAt) : 'N/A'}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">COMPLETED</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>

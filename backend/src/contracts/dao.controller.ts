@@ -36,22 +36,42 @@ export class DaoController {
       try {
         const daoAddresses = await this.daoFactoryService.getAllDAOs();
         
-        // For each DAO address, we need to get its details
-        // For now, we'll create placeholder data with real addresses
-        realDAOs = daoAddresses.map((address, index) => ({
-          id: index + 1000, // Use high IDs to distinguish from mock data
-          name: `User Created DAO #${index + 1}`,
-          symbol: `UCD${index + 1}`,
-          description: `A DAO created by the community at address ${address.slice(0, 10)}...`,
-          contractAddress: address,
-          creatorWallet: '0x0000000000000000000000000000000000000000', // Would need to fetch from contract
-          createdAt: new Date().toISOString(), // Would need to fetch from contract
-          logoUrl: null,
-          isUserCreated: true // Flag to identify user-created DAOs
-        }));
+        // Fetch real details for each DAO
+        const daoDetailsPromises = daoAddresses.map(async (address, index) => {
+          try {
+            const details = await this.daoFactoryService.getDAODetails(address);
+            return {
+              id: index + 1000, // Use high IDs to distinguish from mock data
+              name: details.name,
+              symbol: details.symbol,
+              description: details.description,
+              contractAddress: address,
+              creatorWallet: details.creator,
+              createdAt: details.createdAt,
+              logoUrl: null,
+              isUserCreated: true // Flag to identify user-created DAOs
+            };
+          } catch (error) {
+            console.error(`Error fetching details for DAO at ${address}:`, error);
+            // Fallback to basic data if details fetch fails
+            return {
+              id: index + 1000,
+              name: `DAO ${address.slice(0, 8)}...`,
+              symbol: 'UNKNOWN',
+              description: 'A decentralized autonomous organization',
+              contractAddress: address,
+              creatorWallet: '0x0000000000000000000000000000000000000000',
+              createdAt: new Date().toISOString(),
+              logoUrl: null,
+              isUserCreated: true
+            };
+          }
+        });
+        
+        realDAOs = await Promise.all(daoDetailsPromises);
       } catch (error) {
         console.error('Error fetching real DAOs:', error);
-        // Continue with mock data if blockchain fetch fails
+        // Continue with empty array if blockchain fetch fails
       }
 
       // No example DAOs - only user-created DAOs from blockchain
@@ -177,6 +197,22 @@ export class DaoController {
       return {
         success: false,
         error: error.message
+      };
+    }
+  }
+
+  @Get('details/:address')
+  async getDAODetails(@Param('address') address: string) {
+    try {
+      const details = await this.daoFactoryService.getDAODetails(address);
+      return {
+        success: true,
+        data: details
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Failed to fetch DAO details'
       };
     }
   }

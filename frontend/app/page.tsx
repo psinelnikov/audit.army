@@ -8,7 +8,6 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { LoginButton } from '../components/auth/LoginButton';
 import { useAuth } from '../contexts/AuthContext';
 
 interface DAO {
@@ -90,17 +89,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground army-pattern">
+    <div className="army-pattern">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-4xl font-bold mb-2 camo-text">🎖️ Audit Army</h1>
-            <p className="text-muted-foreground">Explore DAOs</p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <LoginButton />
-          </div>
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold mb-2 camo-text">🎖️ Audit Army</h1>
+          <p className="text-muted-foreground">Explore DAOs</p>
         </div>
 
         {/* Stats Section */}

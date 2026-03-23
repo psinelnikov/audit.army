@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { prepareCreateAudit, uploadDocument } from '../../../lib/api';
 import {
   signAndSendTransaction,
@@ -15,9 +16,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Alert, AlertDescription } from '../../../components/ui/alert';
 
 export default function RequestAuditPage() {
+  const searchParams = useSearchParams();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  
+  // Read query parameters immediately
+  const daoAddress = searchParams.get('dao');
+  const daoName = searchParams.get('name');
+  
+  const [daoInfo, setDaoInfo] = useState({
+    address: daoAddress || '',
+    name: daoName || '',
+  });
   const [formData, setFormData] = useState({
-    daoAddress: '',
+    daoAddress: daoAddress || '',
     ipfsHash: '',
     amount: '0.01',
   });
@@ -39,7 +50,7 @@ export default function RequestAuditPage() {
 
   useEffect(() => {
     checkWallet();
-  }, []);
+  }, [searchParams]);
 
   const checkWallet = async () => {
     try {
@@ -50,8 +61,8 @@ export default function RequestAuditPage() {
     }
   };
 
-  const handleFileUpload = async () => {
-    if (!selectedFile) {
+  const handleFileUpload = async (file: File) => {
+    if (!file) {
       setUploadResult({ success: false, error: 'Please select a file first' });
       return;
     }
@@ -60,7 +71,7 @@ export default function RequestAuditPage() {
     setUploadResult(null);
 
     try {
-      const response = await uploadDocument(selectedFile);
+      const response = await uploadDocument(file);
       
       if (response.success) {
         setUploadResult(response);
@@ -84,6 +95,19 @@ export default function RequestAuditPage() {
     try {
       if (!walletAddress) {
         throw new Error('Please connect your wallet first');
+      }
+
+      if (!formData.daoAddress) {
+        throw new Error('Please enter a DAO address');
+      }
+
+      if (!formData.ipfsHash) {
+        throw new Error('Please upload a document first');
+      }
+
+      // Validate DAO address format
+      if (!formData.daoAddress.startsWith('0x') || formData.daoAddress.length !== 42) {
+        throw new Error('Invalid DAO address format');
       }
 
       // Prepare transaction
@@ -125,12 +149,16 @@ export default function RequestAuditPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground army-pattern">
+    <div className="army-pattern">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link href="/" className="text-primary hover:underline mb-8 inline-block">
-          ← Back to Home
-        </Link>
-
+        <h1 className="text-4xl font-bold mb-2 camo-text">
+          {daoInfo.name ? `Request Audit from ${daoInfo.name}` : 'Request an Audit'}
+        </h1>
+        {daoInfo.name && (
+          <p className="text-muted-foreground mb-8">
+            Submit your smart contract for audit by {daoInfo.name}
+          </p>
+        )}
         <Card className="bg-card border-border camo-border">
           <CardHeader>
             <CardTitle className="text-foreground">Request an Audit</CardTitle>
@@ -147,10 +175,14 @@ export default function RequestAuditPage() {
                   className="mt-2 bg-muted border-border text-foreground"
                   placeholder="0x123..."
                   required
-                  disabled={!walletAddress}
+                  disabled={!walletAddress || daoInfo.address !== ''}
+                  readOnly={daoInfo.address !== ''}
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  The DAO address you want to request an audit from
+                  {daoInfo.address !== '' 
+                    ? `Requesting audit from ${daoInfo.name || 'this DAO'}`
+                    : 'The DAO address you want to request an audit from'
+                  }
                 </p>
               </div>
 
@@ -162,7 +194,13 @@ export default function RequestAuditPage() {
                       id="document"
                       type="file"
                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setSelectedFile(file);
+                      if (file) {
+                        handleFileUpload(file);
+                      }
+                    }}
                       className="hidden"
                       disabled={!walletAddress || uploading}
                     />
@@ -175,7 +213,7 @@ export default function RequestAuditPage() {
                       <div className="space-y-3">
                         <div className="text-5xl text-center">📄</div>
                         <p className="text-lg font-medium text-center">
-                          {selectedFile ? selectedFile.name : 'Choose a file or drag it here'}
+                          {uploading ? 'Uploading...' : selectedFile ? selectedFile.name : 'Choose a file or drag it here'}
                         </p>
                         <p className="text-sm text-muted-foreground text-center max-w-xs mx-auto">
                           PDF, Word, or images (max 10MB)
@@ -184,14 +222,11 @@ export default function RequestAuditPage() {
                     </label>
                   </div>
                   
-                  {selectedFile && (
-                    <Button
-                      onClick={handleFileUpload}
-                      disabled={!selectedFile || uploading || !walletAddress}
-                      className="w-full bg-primary hover:bg-primary/90 camo-border"
-                    >
-                      {uploading ? 'Uploading...' : 'Upload Document'}
-                    </Button>
+                  {uploading && (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                      <p className="text-sm text-muted-foreground">Uploading document...</p>
+                    </div>
                   )}
                 
                   {uploadResult && (
@@ -251,23 +286,30 @@ export default function RequestAuditPage() {
           </CardContent>
         </Card>
 
-        {result && result.success && result.txHash && (
+        {result && result.success && result.data?.txHash && (
           <Alert className="mt-6 border-primary bg-primary/10 camo-border">
             <AlertDescription className="text-primary">
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-foreground">✓ Audit Request Started!</h3>
-                <p>Transaction Hash: {result.txHash}</p>
+                <h3 className="text-xl font-bold text-foreground">✓ Audit Request Submitted!</h3>
+                <p>Transaction Hash: {result.data.txHash}</p>
                 <p className="text-sm">
                   Your transaction has been submitted to Sepolia with payment locked in escrow.
                 </p>
-                <a
-                  href={`https://sepolia.etherscan.io/tx/${result.txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline mt-4 inline-block"
-                >
-                  View on Etherscan →
-                </a>
+                <div className="flex space-x-4 mt-4">
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${result.data.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    View on Etherscan →
+                  </a>
+                  {daoInfo.address && (
+                    <Link href={`/dao/${daoInfo.address}`} className="text-primary hover:underline">
+                      View on DAO Page →
+                    </Link>
+                  )}
+                </div>
               </div>
             </AlertDescription>
           </Alert>

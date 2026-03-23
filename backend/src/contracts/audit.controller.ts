@@ -1,13 +1,28 @@
-import { Controller, Post, Body, Get, Param, UploadedFile, Logger, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Post, Put, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 import { AuditEscrowService } from './audit-escrow.service';
 import { v4 as uuidv4 } from 'uuid';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 class CreateAuditDto {
+  @IsString()
+  @IsNotEmpty()
   daoAddress: string;
+
+  @IsString()
+  @IsNotEmpty()
   ipfsHash: string;
+
+  @IsString()
+  @IsOptional()
   documentUrl?: string;
+
+  @IsString()
+  @IsNotEmpty()
   amount: string;
+
+  @IsString()
+  @IsNotEmpty()
   walletAddress: string;
 }
 
@@ -142,6 +157,38 @@ export class AuditController {
       return {
         success: false,
         error: error.message || 'Failed to get document'
+      };
+    }
+  }
+
+  @Get('dao/:daoAddress')
+  async getAuditsByDAO(@Param('daoAddress') daoAddress: string) {
+    try {
+      const audits = await this.auditEscrowService.getAuditsByDAO(daoAddress);
+      return {
+        success: true,
+        data: { audits }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Failed to get audits for DAO'
+      };
+    }
+  }
+
+  @Get('dao/:daoAddress/check-reviewer/:userAddress')
+  async checkDAOReviewer(@Param('daoAddress') daoAddress: string, @Param('userAddress') userAddress: string) {
+    try {
+      const isReviewer = await this.auditEscrowService.isDAOReviewer(daoAddress, userAddress);
+      return {
+        success: true,
+        data: { isReviewer }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Failed to check DAO reviewer status'
       };
     }
   }

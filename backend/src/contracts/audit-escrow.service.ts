@@ -27,23 +27,30 @@ export class AuditEscrowService {
     daoAddress: string,
     ipfsHash: string,
     amount: string,
-    fromAddress: string
-  ): Promise<{ to: string; data: string; from: string; value: string }> {
+    fromAddress: string,
+  ): Promise<any> {
     try {
-      this.logger.log(`Preparing audit creation transaction for: ${fromAddress}`);
+      if (!daoAddress) {
+        throw new Error('DAO address is required');
+      }
 
-      const escrow = new ethers.Contract(
-        process.env.AUDIT_ESCROW_ADDRESS!,
-        AuditEscrowABI.abi,
-        this.provider
-      );
+      if (!ipfsHash) {
+        throw new Error('IPFS hash is required');
+      }
+
+      const escrow = this.escrow;
+      if (!escrow) {
+        throw new Error('Audit Escrow contract is not initialized');
+      }
 
       const txData = await escrow.createAudit.populateTransaction(
         daoAddress,
         ipfsHash
       );
 
-      const value = ethers.parseEther(amount);
+      // Ensure amount is a valid string and not corrupted
+      const cleanAmount = String(amount).trim();
+      const value = ethers.parseEther(cleanAmount);
 
       return {
         to: process.env.AUDIT_ESCROW_ADDRESS!,
@@ -86,6 +93,53 @@ export class AuditEscrowService {
     } catch (error) {
       this.logger.error(`Error getting audit count: ${error.message}`);
       throw error;
+    }
+  }
+
+  async getAuditsByDAO(daoAddress: string): Promise<any[]> {
+    try {
+      const auditCount = await this.getAuditCount();
+      const audits = [];
+      
+      for (let i = 0; i < auditCount; i++) {
+        try {
+          const audit = await this.getAudit(i.toString());
+          if (audit.dao.toLowerCase() === daoAddress.toLowerCase()) {
+            audits.push(audit);
+          }
+        } catch (error) {
+          // Skip invalid audits
+          continue;
+        }
+      }
+      
+      return audits;
+    } catch (error) {
+      this.logger.error(`Error getting audits by DAO: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async isDAOReviewer(daoAddress: string, userAddress: string): Promise<boolean> {
+    try {
+      // This would need to be implemented in the DAO contract
+      // For now, we'll use a placeholder implementation
+      // In a real implementation, you'd call a method like isReviewer() on the DAO contract
+      const daoContract = new ethers.Contract(daoAddress, [
+        'function isReviewer(address) view returns (bool)'
+      ], this.provider);
+      
+      try {
+        return await daoContract.isReviewer(userAddress);
+      } catch (error) {
+        // If the method doesn't exist, fall back to checking if they're an initial reviewer
+        // This is a simplified approach - in production you'd have proper DAO contract integration
+        this.logger.warn(`isReviewer method not found on DAO contract, using fallback`);
+        return false; // For now, return false until proper implementation
+      }
+    } catch (error) {
+      this.logger.error(`Error checking DAO reviewer status: ${error.message}`);
+      return false;
     }
   }
 }

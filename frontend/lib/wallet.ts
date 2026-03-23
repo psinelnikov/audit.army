@@ -161,9 +161,17 @@ export async function signAndSendTransaction(txData: {
   }
 
   try {
+    // Convert value to hex string for MetaMask compatibility
+    const valueHex = '0x' + BigInt(txData.value).toString(16);
+    
+    const txDataWithHexValue = {
+      ...txData,
+      value: valueHex
+    };
+
     const txHash = await (window as any).ethereum.request({
       method: 'eth_sendTransaction',
-      params: [txData],
+      params: [txDataWithHexValue],
     });
 
     return txHash;

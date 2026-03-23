@@ -106,12 +106,8 @@ export default function CreateDAOPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground army-pattern">
+    <div className="army-pattern">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Link href="/" className="text-primary hover:underline mb-8 inline-block">
-          ← Back to Home
-        </Link>
-
         <h1 className="text-4xl font-bold mb-8 camo-text">Create Your DAO</h1>
 
         {walletAddress ? (

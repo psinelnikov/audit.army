@@ -103,4 +103,72 @@ export class DaoFactoryService {
       throw error;
     }
   }
+
+  async getDAODetails(daoAddress: string): Promise<any> {
+    if (!this.factory) {
+      throw new Error('DAO Factory is not initialized. Please check DAO_FACTORY_ADDRESS environment variable.');
+    }
+    
+    try {
+      // Create a contract instance for the specific DAO
+      // Use a comprehensive DAO ABI that covers common methods
+      const daoABI = [
+        'function name() view returns (string)',
+        'function symbol() view returns (string)', 
+        'function description() view returns (string)',
+        'function creator() view returns (address)',
+        'function createdAt() view returns (uint256)',
+        'function getCreator() view returns (address)', // Alternative method name
+        'function getDetails() view returns (string, string, string, address, uint256)' // Batch method
+      ];
+      
+      const daoContract = new ethers.Contract(daoAddress, daoABI, this.provider);
+      
+      // Try different approaches to get DAO details
+      let name, symbol, description, creator, createdAt;
+      
+      try {
+        // First try the batch method if available
+        const details = await daoContract.getDetails();
+        name = details[0];
+        symbol = details[1]; 
+        description = details[2];
+        creator = details[3];
+        createdAt = details[4];
+      } catch (batchError) {
+        // Fall back to individual method calls
+        const results = await Promise.allSettled([
+          daoContract.name(),
+          daoContract.symbol(),
+          daoContract.description(),
+          daoContract.creator().catch(() => daoContract.getCreator()), // Try both creator methods
+          daoContract.createdAt()
+        ]);
+        
+        name = results[0].status === 'fulfilled' ? results[0].value : `DAO ${daoAddress.slice(0, 8)}...`;
+        symbol = results[1].status === 'fulfilled' ? results[1].value : 'UNKNOWN';
+        description = results[2].status === 'fulfilled' ? results[2].value : 'A decentralized autonomous organization';
+        creator = results[3].status === 'fulfilled' ? results[3].value : '0x0000000000000000000000000000000000000000';
+        createdAt = results[4].status === 'fulfilled' ? results[4].value : Date.now();
+      }
+      
+      return {
+        name: typeof name === 'string' ? name : String(name),
+        symbol: typeof symbol === 'string' ? symbol : String(symbol),
+        description: typeof description === 'string' ? description : String(description),
+        creator: typeof creator === 'string' ? creator : String(creator),
+        createdAt: new Date(Number(createdAt) * 1000).toISOString()
+      };
+    } catch (error) {
+      this.logger.error(`Error getting DAO details for ${daoAddress}: ${error.message}`);
+      // Return fallback data if contract calls fail
+      return {
+        name: `DAO ${daoAddress.slice(0, 8)}...`,
+        symbol: 'UNKNOWN',
+        description: 'A decentralized autonomous organization',
+        creator: '0x0000000000000000000000000000000000000000',
+        createdAt: new Date().toISOString()
+      };
+    }
+  }
 }

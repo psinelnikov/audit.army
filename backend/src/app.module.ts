@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ContractsModule } from './contracts/contracts.module';
@@ -26,6 +26,12 @@ import { databaseConfig } from './config/database.config';
     // DAOModule, // Temporarily disabled until database is set up
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: 'APP_PIPE',
+      useClass: ValidationPipe,
+    },
+  ],
 })
 export class AppModule {}
