@@ -9,15 +9,22 @@ export class DaoFactoryService {
   private factory: any;
 
   constructor() {
-    this.provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
+    this.provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL || 'https://rpc.sepolia.org');
     const factoryAddress = process.env.DAO_FACTORY_ADDRESS;
 
     if (!factoryAddress) {
-      throw new Error('DAO_FACTORY_ADDRESS environment variable is required');
+      this.logger.warn('DAO_FACTORY_ADDRESS environment variable is not set. DAO operations will fail.');
+      this.factory = null;
+      return;
     }
 
-    this.factory = new ethers.Contract(factoryAddress, DAOFactoryABI.abi, this.provider);
-    this.logger.log(`DAO Factory initialized at ${factoryAddress}`);
+    try {
+      this.factory = new ethers.Contract(factoryAddress, DAOFactoryABI.abi, this.provider);
+      this.logger.log(`DAO Factory initialized at ${factoryAddress}`);
+    } catch (error) {
+      this.logger.error(`Failed to initialize DAO Factory: ${error.message}`);
+      this.factory = null;
+    }
   }
 
   async prepareCreateDAOTransaction(
@@ -30,11 +37,21 @@ export class DaoFactoryService {
     try {
       this.logger.log(`Preparing DAO creation transaction for: ${fromAddress}`);
 
+      const factoryAddress = process.env.DAO_FACTORY_ADDRESS;
+      if (!factoryAddress) {
+        throw new Error('DAO_FACTORY_ADDRESS environment variable is not set');
+      }
+
       const factory = new ethers.Contract(
-        process.env.DAO_FACTORY_ADDRESS!,
+        factoryAddress,
         DAOFactoryABI.abi,
         this.provider
       );
+
+      // Check if the method exists
+      if (!factory.createDAO) {
+        throw new Error('createDAO method not found in contract');
+      }
 
       const txData = await factory.createDAO.populateTransaction(
         name,
@@ -43,9 +60,13 @@ export class DaoFactoryService {
         description
       );
 
+      if (!txData || !txData.data) {
+        throw new Error('Failed to populate transaction data');
+      }
+
       return {
-        to: process.env.DAO_FACTORY_ADDRESS!,
-        data: txData.data || '0x',
+        to: factoryAddress,
+        data: txData.data,
         from: fromAddress,
         value: '0x0'
       };
@@ -56,6 +77,10 @@ export class DaoFactoryService {
   }
 
   async getDAOAddress(daoId: number): Promise<string> {
+    if (!this.factory) {
+      throw new Error('DAO Factory is not initialized. Please check DAO_FACTORY_ADDRESS environment variable.');
+    }
+    
     try {
       const address = await this.factory.getDAOAddress(daoId);
       return address;
@@ -66,6 +91,10 @@ export class DaoFactoryService {
   }
 
   async getAllDAOs(): Promise<string[]> {
+    if (!this.factory) {
+      throw new Error('DAO Factory is not initialized. Please check DAO_FACTORY_ADDRESS environment variable.');
+    }
+    
     try {
       const daos = await this.factory.getAllDAOs();
       return daos;

@@ -1,11 +1,26 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { DaoFactoryService } from './dao-factory.service';
+import { IsString, IsArray, IsNotEmpty } from 'class-validator';
 
 class CreateDAODto {
+  @IsString()
+  @IsNotEmpty()
   name: string;
+
+  @IsString()
+  @IsNotEmpty()
   symbol: string;
+
+  @IsArray()
+  @IsNotEmpty()
   initialReviewers: string[];
+
+  @IsString()
+  @IsNotEmpty()
   description: string;
+
+  @IsString()
+  @IsNotEmpty()
   walletAddress: string;
 }
 
@@ -17,6 +32,14 @@ export class DaoController {
   async prepareCreateDAOTx(@Body() createDAODto: CreateDAODto) {
     try {
       const { name, symbol, initialReviewers, description, walletAddress } = createDAODto;
+
+      // Validate required fields
+      if (!name || !symbol || !initialReviewers || !description || !walletAddress) {
+        return {
+          success: false,
+          error: `Missing required fields: ${!name ? 'name ' : ''}${!symbol ? 'symbol ' : ''}${!initialReviewers ? 'initialReviewers ' : ''}${!description ? 'description ' : ''}${!walletAddress ? 'walletAddress ' : ''}`
+        };
+      }
 
       const result = await this.daoFactoryService.prepareCreateDAOTransaction(
         name,

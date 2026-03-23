@@ -1,10 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
+import * as express from 'express';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  // Add explicit JSON body parser
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
 
   app.enableCors({
     origin: '*',
@@ -12,7 +18,20 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    exceptionFactory: (errors) => {
+      const errorMessages = errors.map(error => ({
+        field: error.property,
+        message: error.constraints ? Object.values(error.constraints).join(', ') : 'Invalid value'
+      }));
+      return new BadRequestException({
+        message: 'Validation failed',
+        errors: errorMessages
+      });
+    }
+  }));
 
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
