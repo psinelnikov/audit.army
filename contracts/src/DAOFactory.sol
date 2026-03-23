@@ -2,14 +2,19 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./core/DAO.sol";
+import "./review/AuditEscrow.sol";
 
-contract DAOFactory is Ownable {
+interface IDAO {
+    function reviewers(address) external view returns (bool);
+    function reviewerList() external view returns (address[] memory);
+}
+
+contract DAOFactory {
     uint256 public daoCount;
     address[] public daoList;
-
     mapping(uint256 => address) public daoIdToAddress;
+    mapping(address => address) public daoToAuditEscrow;
     mapping(address => bool) public isDAO;
 
     event DAOCreated(
@@ -17,43 +22,56 @@ contract DAOFactory is Ownable {
         address indexed daoAddress,
         string name,
         address indexed creator,
-        uint256 createdAt
+        uint256 timestamp
     );
 
-    constructor(address _initialOwner) Ownable(_initialOwner) {}
+    event AuditEscrowDeployed(
+        address indexed daoAddress,
+        address indexed auditEscrowAddress,
+        uint256 timestamp
+    );
 
     function createDAO(
         string memory _name,
         string memory _symbol,
         address[] memory _initialReviewers,
         string memory _description
-    ) external returns (address daoAddress) {
-        require(bytes(_name).length > 0, "DAO name cannot be empty");
-        require(bytes(_symbol).length > 0, "DAO symbol cannot be empty");
-        require(_initialReviewers.length > 0, "At least one reviewer required");
+    ) external returns (address) {
+        require(bytes(_name).length > 0, "Empty name");
+        require(bytes(_symbol).length > 0, "Empty symbol");
+        require(_initialReviewers.length > 0, "Need reviewers");
 
         daoCount++;
-        uint256 daoId = daoCount;
-
-        daoAddress = address(new DAO(
+        
+        DAO newDAO = new DAO(
             _name,
             _symbol,
             _initialReviewers,
             _description,
             msg.sender,
-            daoId
-        ));
+            daoCount
+        );
 
-        daoIdToAddress[daoId] = daoAddress;
+        address daoAddress = address(newDAO);
+        daoIdToAddress[daoCount] = daoAddress;
         daoList.push(daoAddress);
         isDAO[daoAddress] = true;
 
-        emit DAOCreated(daoId, daoAddress, _name, msg.sender, block.timestamp);
+        AuditEscrow newAuditEscrow = new AuditEscrow(daoAddress);
+        daoToAuditEscrow[daoAddress] = address(newAuditEscrow);
+
+        emit DAOCreated(daoCount, daoAddress, _name, msg.sender, block.timestamp);
+        emit AuditEscrowDeployed(daoAddress, address(newAuditEscrow), block.timestamp);
+        
+        return daoAddress;
     }
 
     function getDAOAddress(uint256 _daoId) external view returns (address) {
-        require(_daoId > 0 && _daoId <= daoCount, "Invalid DAO ID");
         return daoIdToAddress[_daoId];
+    }
+
+    function getAuditEscrowAddress(address _daoAddress) external view returns (address) {
+        return daoToAuditEscrow[_daoAddress];
     }
 
     function getAllDAOs() external view returns (address[] memory) {
@@ -63,4 +81,12 @@ contract DAOFactory is Ownable {
     function getDAOCount() external view returns (uint256) {
         return daoCount;
     }
+
+//    function isReviewer(address _dao, address _reviewer) external view returns (bool) {
+//        return IDAO(_dao).reviewers(_reviewer);
+//    }
+
+//    function getReviewers(address _dao) external view returns (address[] memory) {
+//        return IDAO(_dao).reviewerList();
+//    }
 }

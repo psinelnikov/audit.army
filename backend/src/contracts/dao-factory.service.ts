@@ -90,6 +90,7 @@ export class DaoFactoryService {
     }
   }
 
+  
   async getAllDAOs(): Promise<string[]> {
     if (!this.factory) {
       throw new Error('DAO Factory is not initialized. Please check DAO_FACTORY_ADDRESS environment variable.');
@@ -152,12 +153,22 @@ export class DaoFactoryService {
         createdAt = results[4].status === 'fulfilled' ? results[4].value : Date.now();
       }
       
+      // Get AuditEscrow address
+      let auditEscrowAddress;
+      try {
+        auditEscrowAddress = await this.factory.getAuditEscrowAddress(daoAddress);
+      } catch (error) {
+        this.logger.warn(`Failed to get AuditEscrow address for DAO ${daoAddress}: ${error.message}`);
+        auditEscrowAddress = '0x0000000000000000000000000000000000000000';
+      }
+      
       return {
         name: typeof name === 'string' ? name : String(name),
         symbol: typeof symbol === 'string' ? symbol : String(symbol),
         description: typeof description === 'string' ? description : String(description),
         creator: typeof creator === 'string' ? creator : String(creator),
-        createdAt: new Date(Number(createdAt) * 1000).toISOString()
+        createdAt: new Date(Number(createdAt) * 1000).toISOString(),
+        auditEscrowAddress
       };
     } catch (error) {
       this.logger.error(`Error getting DAO details for ${daoAddress}: ${error.message}`);
@@ -167,7 +178,8 @@ export class DaoFactoryService {
         symbol: 'UNKNOWN',
         description: 'A decentralized autonomous organization',
         creator: '0x0000000000000000000000000000000000000000',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        auditEscrowAddress: '0x0000000000000000000000000000000000000000'
       };
     }
   }

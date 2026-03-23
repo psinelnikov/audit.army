@@ -155,6 +155,7 @@ export async function signAndSendTransaction(txData: {
   data: string;
   from: string;
   value: string;
+  gas?: string;
 }): Promise<string> {
   if (typeof window === 'undefined' || !(window as any).ethereum) {
     throw new Error('Please install MetaMask');
@@ -168,6 +169,11 @@ export async function signAndSendTransaction(txData: {
       ...txData,
       value: valueHex
     };
+
+    // Add gas limit if provided
+    if (txData.gas) {
+      txDataWithHexValue.gas = txData.gas;
+    }
 
     const txHash = await (window as any).ethereum.request({
       method: 'eth_sendTransaction',
@@ -218,6 +224,13 @@ export function isMetaMaskInstalled(): boolean {
 export function formatAddress(address: string, chars = 6): string {
   if (!address) return '';
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+}
+
+/**
+ * Format date for display
+ */
+export function formatDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toLocaleDateString();
 }
 
 /**

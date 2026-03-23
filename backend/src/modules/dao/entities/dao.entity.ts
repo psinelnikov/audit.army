@@ -11,6 +11,9 @@ export class DAO {
   @Column()
   contractAddress: string;
 
+  @Column({ name: 'audit_escrow_address', nullable: true })
+  auditEscrowAddress: string;
+
   @Column()
   name: string;
 

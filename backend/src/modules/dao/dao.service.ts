@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, MoreThanOrEqual } from 'typeorm';
 import { DAO } from './entities/dao.entity';
+import { ethers } from 'ethers';
 
 @Injectable()
 export class DAOService {
@@ -58,6 +59,63 @@ export class DAOService {
       return await this.daoRepository.save(dao);
     } catch (error) {
       this.logger.error(`Error creating DAO: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async createDAOWithAuditEscrow(daoData: {
+    name: string;
+    symbol: string;
+    description: string;
+    creatorWallet: string;
+    daoContractAddress: string;
+    auditEscrowAddress: string;
+    initialReviewers: string[];
+  }): Promise<{ dao: DAO }> {
+    try {
+      this.logger.log(`Registering DAO with addresses: ${daoData.name}`);
+      
+      // Validate addresses
+      if (!ethers.isAddress(daoData.daoContractAddress)) {
+        throw new Error('Invalid DAO contract address');
+      }
+      
+      if (!ethers.isAddress(daoData.auditEscrowAddress)) {
+        throw new Error('Invalid AuditEscrow contract address');
+      }
+      
+      // Create DAO record with user-provided addresses
+      const dao = await this.create({
+        name: daoData.name,
+        symbol: daoData.symbol,
+        contractAddress: daoData.daoContractAddress,
+        auditEscrowAddress: daoData.auditEscrowAddress,
+        chainId: 11155111, // Sepolia
+        description: daoData.description,
+        creatorWallet: daoData.creatorWallet,
+      });
+
+      this.logger.log(`DAO registered with ID: ${dao.id}, DAO Address: ${daoData.daoContractAddress}, AuditEscrow: ${daoData.auditEscrowAddress}`);
+      
+      return {
+        dao
+      };
+    } catch (error) {
+      this.logger.error(`Error registering DAO: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async updateContractAddress(id: number, contractAddress: string): Promise<DAO> {
+    try {
+      await this.daoRepository.update(id, { contractAddress });
+      const dao = await this.findOne(id);
+      if (!dao) {
+        throw new Error('DAO not found');
+      }
+      return dao;
+    } catch (error) {
+      this.logger.error(`Error updating DAO contract address: ${error.message}`);
       throw error;
     }
   }

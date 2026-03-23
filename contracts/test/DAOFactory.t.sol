@@ -17,7 +17,7 @@ contract DAOFactoryTest is Test {
         reviewer1 = address(0x1);
         reviewer2 = address(0x2);
 
-        daoFactory = new DAOFactory(owner);
+        daoFactory = new DAOFactory();
     }
 
     function test_CreateDAO() public {

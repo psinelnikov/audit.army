@@ -23,7 +23,7 @@ import { databaseConfig } from './config/database.config';
     ContractsModule,
     CommonModule,
     AuthModule,
-    // DAOModule, // Temporarily disabled until database is set up
+    DAOModule,
   ],
   controllers: [AppController],
   providers: [

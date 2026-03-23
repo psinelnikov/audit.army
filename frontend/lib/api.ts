@@ -89,13 +89,43 @@ export async function prepareCreateDAO(data: {
   return response.json();
 }
 
+export async function getAudit(auditId: string): Promise<any> {
+  const response = await fetch(`${API_URL}/api/audit/${auditId}`);
+  return response.json();
+}
+
 export async function prepareCreateAudit(data: {
-  daoAddress: string;
   ipfsHash: string;
   amount: string;
   walletAddress: string;
+  auditEscrowAddress: string;
 }): Promise<PrepareAuditResponse> {
   const response = await fetch(`${API_URL}/api/audit/prepare-transaction`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return response.json();
+}
+
+export async function prepareAssignReview(data: {
+  auditId: string;
+  reviewerAddress: string;
+}): Promise<any> {
+  const response = await fetch(`${API_URL}/api/audit/assign-review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return response.json();
+}
+
+export async function claimReview(data: {
+  auditId: string;
+  reviewerAddress: string;
+  auditEscrowAddress?: string;
+}): Promise<any> {
+  const response = await fetch(`${API_URL}/api/audit/claim-review`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -154,8 +184,13 @@ export async function switchNetwork() {
   return response.json();
 }
 
-export async function getAuditsByDAO(daoAddress: string) {
-  const response = await fetch(`${API_URL}/api/audit/dao/${encodeURIComponent(daoAddress)}`);
+export async function getAuditsByDAO(auditEscrowAddress: string) {
+  const response = await fetch(`${API_URL}/api/audit/dao?auditEscrowAddress=${encodeURIComponent(auditEscrowAddress)}`);
+  return response.json();
+}
+
+export async function getAuditEscrowAddress(daoAddress: string): Promise<any> {
+  const response = await fetch(`${API_URL}/api/audit/dao/${encodeURIComponent(daoAddress)}/audit-escrow-address`);
   return response.json();
 }
 

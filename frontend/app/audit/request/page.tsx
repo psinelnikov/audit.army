@@ -22,15 +22,15 @@ export default function RequestAuditPage() {
   // Read query parameters immediately
   const daoAddress = searchParams.get('dao');
   const daoName = searchParams.get('name');
+  const auditEscrowAddress = searchParams.get('auditEscrowAddress');
   
   const [daoInfo, setDaoInfo] = useState({
     address: daoAddress || '',
     name: daoName || '',
   });
   const [formData, setFormData] = useState({
-    daoAddress: daoAddress || '',
     ipfsHash: '',
-    amount: '0.01',
+    amount: '0.00000001',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -97,8 +97,8 @@ export default function RequestAuditPage() {
         throw new Error('Please connect your wallet first');
       }
 
-      if (!formData.daoAddress) {
-        throw new Error('Please enter a DAO address');
+      if (!daoInfo.address) {
+        throw new Error('DAO address is required');
       }
 
       if (!formData.ipfsHash) {
@@ -106,14 +106,16 @@ export default function RequestAuditPage() {
       }
 
       // Validate DAO address format
-      if (!formData.daoAddress.startsWith('0x') || formData.daoAddress.length !== 42) {
+      if (!daoInfo.address.startsWith('0x') || daoInfo.address.length !== 42) {
         throw new Error('Invalid DAO address format');
       }
 
       // Prepare transaction
       const response = await prepareCreateAudit({
-        ...formData,
+        ipfsHash: formData.ipfsHash,
+        amount: formData.amount,
         walletAddress,
+        auditEscrowAddress: auditEscrowAddress || '',
       });
 
       if (!response.success) {
@@ -137,6 +139,12 @@ export default function RequestAuditPage() {
         success: true,
         data: { txHash },
       });
+
+      // Refresh any cached audit data
+      if (typeof window !== 'undefined') {
+        // Clear any potential cache
+        localStorage.removeItem(`audits_${daoInfo.address}`);
+      }
     } catch (error: any) {
       setResult({
         success: false,
@@ -170,13 +178,12 @@ export default function RequestAuditPage() {
                 <Input
                   id="daoAddress"
                   type="text"
-                  value={formData.daoAddress}
-                  onChange={(e) => setFormData({ ...formData, daoAddress: e.target.value })}
+                  value={daoInfo.address}
                   className="mt-2 bg-muted border-border text-foreground"
                   placeholder="0x123..."
                   required
-                  disabled={!walletAddress || daoInfo.address !== ''}
-                  readOnly={daoInfo.address !== ''}
+                  disabled={!walletAddress}
+                  readOnly
                 />
                 <p className="text-sm text-muted-foreground mt-1">
                   {daoInfo.address !== '' 
@@ -259,13 +266,13 @@ export default function RequestAuditPage() {
                 <Input
                   id="amount"
                   type="number"
-                  step="0.001"
+                  step="0.00000001"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   className="mt-2 bg-muted border-border text-foreground"
-                  placeholder="0.01"
+                  placeholder="0.00000001"
                   required
-                  min="0.001"
+                  min="0.00000001"
                   disabled={!walletAddress}
                 />
                 <p className="text-sm text-muted-foreground mt-1">
@@ -304,6 +311,9 @@ export default function RequestAuditPage() {
                   >
                     View on Etherscan →
                   </a>
+                  <Link href={`/audit/status?txHash=${result.data.txHash}`} className="text-primary hover:underline">
+                    Track Status →
+                  </Link>
                   {daoInfo.address && (
                     <Link href={`/dao/${daoInfo.address}`} className="text-primary hover:underline">
                       View on DAO Page →
