@@ -8,6 +8,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Alert, AlertDescription } from '../../../components/ui/alert';
+import AuditArmyLogo from '../../../components/ui/audit-army-logo';
 
 interface DAO {
   id: number;
@@ -87,34 +88,8 @@ export default function DAOSearchPage() {
   };
 
   return (
-    <div className="army-pattern">
+    <div>
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8 camo-text">Explore DAOs</h1>
-
-        {/* Stats Section */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="bg-card border-border camo-border">
-              <CardContent className="p-6">
-                <CardTitle className="text-2xl font-bold text-primary">{stats.total}</CardTitle>
-                <CardDescription className="text-muted-foreground">Total DAOs</CardDescription>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border camo-border">
-              <CardContent className="p-6">
-                <CardTitle className="text-2xl font-bold text-accent">{stats.thisMonth}</CardTitle>
-                <CardDescription className="text-muted-foreground">Created This Month</CardDescription>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border camo-border">
-              <CardContent className="p-6">
-                <CardTitle className="text-2xl font-bold text-secondary">{stats.thisWeek}</CardTitle>
-                <CardDescription className="text-muted-foreground">Created This Week</CardDescription>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* Search Section */}
         <div className="mb-8">
           <div className="relative">
@@ -132,21 +107,6 @@ export default function DAOSearchPage() {
             </div>
           </div>
         </div>
-
-        {/* Create DAO CTA */}
-        <Card className="mb-8 camo-bg border-primary camo-border">
-          <CardContent className="p-8 text-center">
-            <CardTitle className="text-2xl font-bold mb-4 text-foreground">Create Your Own DAO</CardTitle>
-            <CardDescription className="mb-6 text-muted-foreground">
-              Start your decentralized auditing community today
-            </CardDescription>
-            <Link href="/dao/create">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90 camo-border">
-                Create DAO →
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
 
         {/* DAOs List */}
         {loading && (

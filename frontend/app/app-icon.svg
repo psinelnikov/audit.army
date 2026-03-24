@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="camo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#1e3a1a" />
+      <stop offset="50%" stopColor="#2d5a2b" />
+      <stop offset="100%" stopColor="#4a7c4e" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded square background with gradient -->
+  <rect x="16" y="16" width="96" height="96" rx="24" ry="24" fill="url(#camo-gradient)" stroke="#1a1a1a" stroke-width="4"/>
+  
+  <!-- Star positioned optimally -->
+  <path d="M64 32l10 20 22 3.2-16 15.6 3.6 22-19.6-11.2-19.6 11.2 3.6-22-16-15.6 22-3.2L64 32z" 
+        fill="#f5e6d3" 
+        stroke="none"/>
+</svg>

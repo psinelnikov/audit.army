@@ -106,7 +106,7 @@ export default function CreateDAOPage() {
   };
 
   return (
-    <div className="army-pattern">
+    <div>
       <div className="max-w-3xl mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8 camo-text">Create Your DAO</h1>
 
@@ -138,10 +138,7 @@ export default function CreateDAOPage() {
         )}
 
         <Card className="bg-card border-border camo-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Create Your DAO</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label htmlFor="name" className="text-foreground font-semibold">DAO Name</Label>

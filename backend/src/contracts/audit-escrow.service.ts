@@ -167,7 +167,7 @@ export class AuditEscrowService {
       
       // V2 contract - audit structure no longer includes id or dao fields
       return {
-        index: Number(auditIndex), // Use array index instead of audit id
+        id: Number(auditIndex), // Use array index instead of audit id
         requester: audit.requester,
         assignedReviewer: audit.assignedReviewer,
         amount: ethers.formatEther(audit.amount),
@@ -176,7 +176,8 @@ export class AuditEscrowService {
         createdAt: Number(audit.createdAt),
         completedAt: Number(audit.completedAt),
         reviewerPaid: audit.reviewerPaid,
-        daoPaid: audit.daoPaid
+        daoPaid: audit.daoPaid,
+        dao: auditEscrowAddress // Add the DAO address as the dao field
       };
     } catch (error) {
       this.logger.error(`Error getting audit: ${error.message}`);

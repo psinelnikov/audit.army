@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getAudit } from '../../../lib/api';
 import { formatAddress, formatDate } from '../../../lib/wallet';
+import { BADGE_COLORS } from '../../../lib/constants';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Badge } from '../../../components/ui/badge';
@@ -24,16 +25,17 @@ interface AuditDetails {
 }
 
 const statusMap = {
-  0: { label: 'Pending Assignment', color: 'bg-yellow-500/20 text-yellow-400', description: 'Waiting for a reviewer to be assigned' },
-  1: { label: 'In Review', color: 'bg-blue-500/20 text-blue-400', description: 'A reviewer is currently working on your audit' },
-  2: { label: 'Completed', color: 'bg-green-500/20 text-green-400', description: 'Audit has been completed and reviewed' },
-  3: { label: 'Disputed', color: 'bg-red-500/20 text-red-400', description: 'Audit has been disputed and is under review' },
-  4: { label: 'Refunded', color: 'bg-gray-500/20 text-gray-400', description: 'Payment has been refunded' },
+  0: { label: 'Pending Assignment', color: BADGE_COLORS.PENDING, description: 'Waiting for a reviewer to be assigned' },
+  1: { label: 'In Review', color: BADGE_COLORS.IN_REVIEW, description: 'A reviewer is currently working on your audit' },
+  2: { label: 'Completed', color: BADGE_COLORS.COMPLETED, description: 'Audit has been completed and reviewed' },
+  3: { label: 'Disputed', color: BADGE_COLORS.DISPUTED, description: 'Audit has been disputed and is under review' },
+  4: { label: 'Refunded', color: BADGE_COLORS.REFUNDED, description: 'Payment has been refunded' },
 };
 
 export default function AuditStatusPage() {
   const searchParams = useSearchParams();
   const auditId = searchParams.get('auditId');
+  const auditEscrowAddress = searchParams.get('auditEscrowAddress');
   const txHash = searchParams.get('txHash');
 
   const [audit, setAudit] = useState<AuditDetails | null>(null);
@@ -55,10 +57,10 @@ export default function AuditStatusPage() {
 
     try {
       setLoading(true);
-      const response = await getAudit(auditId);
+      const response = await getAudit(auditId, auditEscrowAddress || undefined);
       
       if (response.success) {
-        setAudit(response.data);
+        setAudit(response.data.audit);
       } else {
         setError(response.error || 'Failed to fetch audit status');
       }
@@ -147,7 +149,7 @@ export default function AuditStatusPage() {
                   Requested on {formatDate(audit.createdAt)}
                 </CardDescription>
               </div>
-              <Badge className={statusInfo.color}>
+              <Badge className={`px-3 py-1 font-medium ${statusInfo.color}`}>
                 {statusInfo.label}
               </Badge>
             </div>
@@ -162,10 +164,10 @@ export default function AuditStatusPage() {
               {timeInfo && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Review Progress</p>
-                  <div className={`text-sm px-2 py-1 rounded-full inline-block ${
+                  <div className={`text-sm px-3 py-1 rounded-full inline-block font-medium ${
                     timeInfo.isOverdue 
-                      ? 'bg-red-500/20 text-red-400' 
-                      : 'bg-green-500/20 text-green-400'
+                      ? BADGE_COLORS.OVERDUE
+                      : BADGE_COLORS.ON_TIME
                   }`}>
                     {timeInfo.text}
                   </div>

@@ -40,3 +40,14 @@ export const UI_CONSTANTS = {
   SPINNER_SIZE: 12,
   MIN_VIEWPORT_HEIGHT_REM: 4,
 } as const;
+
+// Badge color schemes for audit status
+export const BADGE_COLORS = {
+  PENDING: 'bg-yellow-600/30 text-yellow-950 border border-yellow-600/50',
+  IN_REVIEW: 'bg-blue-600/30 text-blue-950 border border-blue-600/50',
+  COMPLETED: 'bg-green-600/30 text-green-950 border border-green-600/50',
+  DISPUTED: 'bg-red-600/30 text-red-950 border border-red-600/50',
+  REFUNDED: 'bg-gray-600/30 text-gray-950 border border-gray-600/50',
+  OVERDUE: 'bg-red-600/30 text-red-950 border border-red-600/50',
+  ON_TIME: 'bg-green-600/30 text-green-950 border border-green-600/50',
+} as const;

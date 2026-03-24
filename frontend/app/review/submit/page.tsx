@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { prepareSubmitReview, uploadDocument } from '../../../lib/api';
 import {
   signAndSendTransaction,
@@ -15,9 +16,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Alert, AlertDescription } from '../../../components/ui/alert';
 
 export default function SubmitReviewPage() {
+  const searchParams = useSearchParams();
+  const auditId = searchParams.get('auditId');
+  const auditEscrowAddress = searchParams.get('auditEscrowAddress');
+  
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    auditId: '',
+    auditId: auditId || '',
     ipfsHash: '',
     documentUrl: '',
   });
@@ -163,14 +168,11 @@ export default function SubmitReviewPage() {
   };
 
   return (
-    <div className="army-pattern">
+    <div>
       <div className="max-w-3xl mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-8 camo-text">Submit a Review</h1>
         <Card className="bg-card border-border camo-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Submit Your Review</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label htmlFor="auditId" className="text-foreground font-semibold">Audit ID</Label>
@@ -182,10 +184,11 @@ export default function SubmitReviewPage() {
                   className="mt-2 bg-muted border-border text-foreground"
                   placeholder="1, 2, 3..."
                   required
-                  disabled={!walletAddress}
+                  disabled={!walletAddress || !!auditId}
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  The ID of the audit you want to review
+                  {auditId ? `Reviewing Audit #${auditId}` : 'The ID of the audit you want to review'}
+                  {auditEscrowAddress && ` for contract ${auditEscrowAddress.slice(0, 8)}...${auditEscrowAddress.slice(-6)}`}
                 </p>
               </div>
 

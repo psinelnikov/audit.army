@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAuditsByDAO, checkDAOReviewer, prepareAssignReview, claimReview } from '../../../lib/api';
 import { ReviewerAllocationService, ReviewerAllocationStrategy } from '../../../lib/reviewer-allocation';
-import { TIME_CONSTANTS, TRANSACTION_WAIT_TIMES, API_ENDPOINTS, UI_CONSTANTS, AUDIT_STATUS } from '../../../lib/constants';
+import { TIME_CONSTANTS, TRANSACTION_WAIT_TIMES, API_ENDPOINTS, UI_CONSTANTS, AUDIT_STATUS, BADGE_COLORS } from '../../../lib/constants';
 import {
   signAndSendTransaction,
   waitForTransaction,
@@ -149,8 +149,8 @@ export default function DAOProfilePage() {
     }
   };
 
-  const fetchAudits = async () => {
-    if (!dao) return;
+  const fetchAudits = async (): Promise<Audit[]> => {
+    if (!dao) return [];
     
     try {
       setAuditsLoading(true);
@@ -158,20 +158,24 @@ export default function DAOProfilePage() {
       const response = await getAuditsByDAO(dao.auditEscrowAddress);
       
       if (response.success) {
-        setAudits(response.data.audits);
+        const freshAudits = response.data.audits;
+        setAudits(freshAudits);
         
         // Determine optimal allocation strategy based on DAO characteristics
-        const reviewerCount = response.data.audits.length > 0 ? 
-          Math.ceil(Math.sqrt(response.data.audits.length)) : 1; // Simple heuristic
+        const reviewerCount = freshAudits.length > 0 ? 
+          Math.ceil(Math.sqrt(freshAudits.length)) : 1;
         const daoSize = reviewerCount <= 3 ? 'small' : reviewerCount <= 10 ? 'medium' : 'large';
         const optimalStrategy = allocationService.getOptimalStrategy(daoSize, reviewerCount);
         
         setAllocationStrategy(optimalStrategy);
+        return freshAudits;
       } else {
         console.error('Failed to fetch audits:', response.error);
+        return audits;
       }
     } catch (error) {
       console.error('Error fetching audits:', error);
+      return audits;
     } finally {
       setAuditsLoading(false);
     }
@@ -358,19 +362,43 @@ export default function DAOProfilePage() {
         console.log('ReviewClaimed events:', reviewClaimedEvents);
       }
       
-      // Double-check the audit was actually claimed
-      await fetchAudits();
-      console.log('Audits refreshed:', audits);
+      // Double-check the audit was actually claimed with retry logic
+      // Provider may need time to see the mined transaction
+      let freshAudits: Audit[] = [];
+      let retryCount = 0;
+      const maxRetries = 3;
+      const retryDelay = 2000; // 2 seconds
       
-      // Verify the audit is now assigned to the reviewer
-      const updatedAudit = audits.find(a => a.id === Number(auditId));
-      console.log('Updated audit:', updatedAudit);
+      while (retryCount < maxRetries) {
+        freshAudits = await fetchAudits();
+        console.log(`Audit fetch attempt ${retryCount + 1}:`, freshAudits);
+        
+        const updatedAudit = freshAudits.find(a => a.id === Number(auditId));
+        console.log('Checking audit:', updatedAudit);
+        
+        if (updatedAudit && updatedAudit.assignedReviewer && 
+            updatedAudit.assignedReviewer.toLowerCase() !== '0x0000000000000000000000000000000000000000') {
+          console.log('Audit successfully assigned to:', updatedAudit.assignedReviewer);
+          break;
+        }
+        
+        if (retryCount < maxRetries - 1) {
+          console.log(`Waiting ${retryDelay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+        retryCount++;
+      }
       
-      if (updatedAudit && updatedAudit.assignedReviewer && updatedAudit.assignedReviewer.toLowerCase() === reviewerAddress.toLowerCase()) {
+      // Use the fresh data, not the stale audits state
+      const updatedAudit = freshAudits.find(a => a.id === Number(auditId));
+      console.log('Final updated audit:', updatedAudit);
+      
+      if (updatedAudit && updatedAudit.assignedReviewer && 
+          updatedAudit.assignedReviewer.toLowerCase() === reviewerAddress.toLowerCase()) {
         alert('Review claimed successfully!');
       } else {
         console.error('Audit assignment failed:', { updatedAudit, expectedReviewer: reviewerAddress });
-        alert('Transaction succeeded but audit was not assigned. Please check the transaction on Etherscan.');
+        alert('Transaction succeeded but audit assignment not confirmed. Please refresh the page to check status.');
       }
     } catch (error: any) {
       // For debugging: Show the actual error instead of fallback
@@ -489,7 +517,7 @@ You will be automatically assigned when your turn comes in the rotation. Current
   }
 
   return (
-    <div className="army-pattern">
+    <div>
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Navigation */}
         <div className="mb-8">
@@ -552,26 +580,19 @@ You will be automatically assigned when your turn comes in the rotation. Current
                 </div>
               </div>
 
-              {/* Debug: Raw DAO Object */}
-              <div className="mt-6 p-4 bg-muted rounded-lg">
-                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Debug: DAO Object</h4>
-                <pre className="text-xs font-mono text-muted-foreground overflow-x-auto whitespace-pre-wrap">
-                  {JSON.stringify(dao, null, 2)}
-                </pre>
-              </div>
-            </div>
+                          </div>
           </CardContent>
         </Card>
 
         {/* Conditional Content Section */}
         <Card className="bg-card border-border camo-border">
           <CardHeader>
-            <CardTitle className="text-foreground">
+            <CardTitle className="text-foreground text-2xl font-bold">
               {authState.isAuthenticated && isDAOReviewer ? 'DAO Review Management' : 
                authState.isAuthenticated ? 'Request an Audit' : 
                'DAO Activity'}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base">
               {authState.isAuthenticated && isDAOReviewer 
                 ? 'Manage pending and in-progress reviews for this DAO'
                 : authState.isAuthenticated 
@@ -587,11 +608,11 @@ You will be automatically assigned when your turn comes in the rotation. Current
                   <h3 className="text-lg font-semibold mb-4 text-foreground">Your Audit Requests</h3>
                   <div className="space-y-4">
                     {getUserAudits().map((audit) => {
-                      const statusInfo = audit.status === AUDIT_STATUS.PENDING ? { label: 'Pending Assignment', color: 'bg-yellow-500/20 text-yellow-400' } :
-                                       audit.status === AUDIT_STATUS.IN_REVIEW ? { label: 'In Review', color: 'bg-blue-500/20 text-blue-400' } :
-                                       audit.status === AUDIT_STATUS.COMPLETED ? { label: 'Completed', color: 'bg-green-500/20 text-green-400' } :
-                                       audit.status === AUDIT_STATUS.DISPUTED ? { label: 'Disputed', color: 'bg-red-500/20 text-red-400' } :
-                                       { label: 'Refunded', color: 'bg-gray-500/20 text-gray-400' };
+                      const statusInfo = audit.status === AUDIT_STATUS.PENDING ? { label: 'Pending Assignment', color: BADGE_COLORS.PENDING } :
+                                       audit.status === AUDIT_STATUS.IN_REVIEW ? { label: 'In Review', color: BADGE_COLORS.IN_REVIEW } :
+                                       audit.status === AUDIT_STATUS.COMPLETED ? { label: 'Completed', color: BADGE_COLORS.COMPLETED } :
+                                       audit.status === AUDIT_STATUS.DISPUTED ? { label: 'Disputed', color: BADGE_COLORS.DISPUTED } :
+                                       { label: 'Refunded', color: BADGE_COLORS.REFUNDED };
                       
                       return (
                         <Card key={audit.id} className="bg-muted border-border">
@@ -609,7 +630,7 @@ You will be automatically assigned when your turn comes in the rotation. Current
                                 <span className={`px-2 py-1 text-xs rounded-full ${statusInfo.color}`}>
                                   {statusInfo.label}
                                 </span>
-                                <Link href={`/audit/status?auditId=${audit.id}`}>
+                                <Link href={`/audit/status?auditId=${audit.id}&auditEscrowAddress=${encodeURIComponent(dao.auditEscrowAddress)}`}>
                                   <Button className="block w-full bg-accent hover:bg-accent/90 text-xs camo-border" size="sm">
                                     Track Status
                                   </Button>
@@ -652,7 +673,7 @@ You will be automatically assigned when your turn comes in the rotation. Current
                   
                   {/* Strategy Info Box */}
                   <div className="mb-4 p-3 bg-accent/5 border border-accent/20 rounded-lg">
-                    <p className="text-xs text-accent-foreground">
+                    <p className="text-xs text-foreground">
                       <strong>Current Strategy:</strong> {allocationService.getStrategyDescription(allocationStrategy)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -675,7 +696,7 @@ You will be automatically assigned when your turn comes in the rotation. Current
                                 <p className="text-sm text-muted-foreground">Requested: {formatDate(audit.createdAt)}</p>
                               </div>
                               <div className="text-right space-y-2">
-                                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">PENDING</span>
+                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${BADGE_COLORS.PENDING}`}>PENDING</span>
                                 <Button
                                   onClick={() => handleClaimReview(audit.id.toString())}
                                   disabled={assigningReview === audit.id.toString()}
@@ -702,32 +723,63 @@ You will be automatically assigned when your turn comes in the rotation. Current
                     <div className="space-y-4">
                       {getInReviewAudits().map((audit) => {
                         const timeInfo = getTimeRemaining(audit.createdAt);
+                        const isAssignedToMe = authState.address && audit.assignedReviewer && 
+                                           audit.assignedReviewer.toLowerCase() === authState.address.toLowerCase();
                         return (
-                        <Card key={audit.id} className="bg-muted border-border">
+                        <Card key={audit.id} className={`bg-muted border-border ${
+                          isAssignedToMe ? 'ring-2 ring-primary/50 border-primary/50' : ''
+                        }`}>
                           <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
+                            {/* Header with status and time info */}
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
                                 <p className="font-mono text-sm text-primary">Audit #{audit.id}</p>
                                 <p className="text-sm text-muted-foreground">Requester: {formatAddress(audit.requester)}</p>
-                                {audit.assignedReviewer && (
-                                  <div className="mt-2 p-2 bg-accent/10 rounded border border-accent/20">
-                                    <p className="text-xs font-semibold text-accent-foreground">REVIEWER</p>
-                                    <p className="text-sm text-accent font-mono">{formatAddress(audit.assignedReviewer)}</p>
-                                  </div>
-                                )}
-                                <p className="text-sm text-muted-foreground mt-2">Amount: {audit.amount} ETH</p>
-                                <p className="text-sm text-muted-foreground">Started: {formatDate(audit.createdAt)}</p>
                               </div>
-                              <div className="text-right space-y-2">
-                                <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">IN REVIEW</span>
-                                <div className={`text-xs px-2 py-1 rounded-full ${
+                              <div className="flex flex-row items-end space-x-2">
+                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${BADGE_COLORS.IN_REVIEW}`}>IN REVIEW</span>
+                                <div className={`text-xs px-3 py-1 rounded-full font-medium ${
                                   timeInfo.isOverdue 
-                                    ? 'bg-red-500/20 text-red-400' 
-                                    : 'bg-green-500/20 text-green-400'
+                                    ? BADGE_COLORS.OVERDUE
+                                    : BADGE_COLORS.ON_TIME
                                 }`}>
                                   {timeInfo.text}
                                 </div>
                               </div>
+                            </div>
+
+                            {/* Reviewer section */}
+                            {audit.assignedReviewer && (
+                              <div className="mb-4 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                                <div className="flex justify-between items-center mb-2">
+                                  <p className="text-xs font-semibold text-accent-foreground">REVIEWER</p>
+                                  <div className="flex items-center">
+                                    {isAssignedToMe && (
+                                      <span className="px-2 py-1 bg-primary/20 text-primary text-xs rounded-full font-medium">
+                                        YOUR REVIEW
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-sm text-accent font-mono">{formatAddress(audit.assignedReviewer)}</p>
+                              </div>
+                            )}
+
+                            {/* Details and actions */}
+                            <div className="flex justify-between items-end">
+                              <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Amount: {audit.amount} ETH</p>
+                                <p className="text-sm text-muted-foreground">Started: {formatDate(audit.createdAt)}</p>
+                              </div>
+                              
+                              {/* Submit Review button */}
+                              {isAssignedToMe && (
+                                <Link href={`/review/submit?auditId=${audit.id}&auditEscrowAddress=${encodeURIComponent(dao.auditEscrowAddress)}`}>
+                                  <Button className="bg-primary hover:bg-primary/90 text-xs camo-border" size="sm">
+                                    Submit Review
+                                  </Button>
+                                </Link>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -776,10 +828,10 @@ You will be automatically assigned when your turn comes in the rotation. Current
         </Card>
 
         {/* Completed Reviews - Visible to everyone */}
-        <Card className="bg-card border-border camo-border">
+        <Card className="bg-card border-border camo-border mt-8">
           <CardHeader>
-            <CardTitle className="text-foreground">Completed Reviews</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-foreground text-2xl font-bold">Completed Reviews</CardTitle>
+            <CardDescription className="text-base">
               Past audits completed by this DAO community
             </CardDescription>
           </CardHeader>
@@ -805,7 +857,7 @@ You will be automatically assigned when your turn comes in the rotation. Current
                           <p className="text-sm text-muted-foreground">Completed: {audit.completedAt ? formatDate(audit.completedAt) : 'N/A'}</p>
                         </div>
                         <div className="text-right">
-                          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">COMPLETED</span>
+                          <span className={`px-3 py-1 text-xs rounded-full font-medium ${BADGE_COLORS.COMPLETED}`}>COMPLETED</span>
                         </div>
                       </div>
                     </CardContent>

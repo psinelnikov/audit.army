@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import { formatAddress } from '../../lib/wallet';
+import AuditArmyLogo from '../ui/audit-army-logo';
 
 export default function Header() {
   const { authState, login, logout, loading } = useAuth();
@@ -31,9 +32,7 @@ export default function Header() {
           {/* Logo and Navigation */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">AA</span>
-              </div>
+              <AuditArmyLogo size={32} gradient={true} />
               <span className="text-xl font-bold text-foreground">Audit Army</span>
             </Link>
           </div>

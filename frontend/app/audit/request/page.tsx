@@ -157,7 +157,7 @@ export default function RequestAuditPage() {
   };
 
   return (
-    <div className="army-pattern">
+    <div>
       <div className="max-w-3xl mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-2 camo-text">
           {daoInfo.name ? `Request Audit from ${daoInfo.name}` : 'Request an Audit'}
@@ -168,10 +168,7 @@ export default function RequestAuditPage() {
           </p>
         )}
         <Card className="bg-card border-border camo-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Request an Audit</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <Label htmlFor="daoAddress" className="text-foreground font-semibold">DAO Address</Label>
@@ -311,7 +308,7 @@ export default function RequestAuditPage() {
                   >
                     View on Etherscan →
                   </a>
-                  <Link href={`/audit/status?txHash=${result.data.txHash}`} className="text-primary hover:underline">
+                  <Link href={`/audit/status?txHash=${result.data.txHash}&auditEscrowAddress=${auditEscrowAddress || ''}`} className="text-primary hover:underline">
                     Track Status →
                   </Link>
                   {daoInfo.address && (

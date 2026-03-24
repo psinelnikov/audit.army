@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Audit Army - Create Your Own Review DAOs",
   description: "Create decentralized auditing communities for any industry",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/app-icon.svg",
+  },
 };
 
 export default function RootLayout({

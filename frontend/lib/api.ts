@@ -89,8 +89,11 @@ export async function prepareCreateDAO(data: {
   return response.json();
 }
 
-export async function getAudit(auditId: string): Promise<any> {
-  const response = await fetch(`${API_URL}/api/audit/${auditId}`);
+export async function getAudit(auditId: string, auditEscrowAddress?: string): Promise<any> {
+  const url = auditEscrowAddress 
+    ? `${API_URL}/api/audit/${auditId}?auditEscrowAddress=${encodeURIComponent(auditEscrowAddress)}`
+    : `${API_URL}/api/audit/${auditId}`;
+  const response = await fetch(url);
   return response.json();
 }
 
