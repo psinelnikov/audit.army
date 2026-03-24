@@ -197,6 +197,11 @@ export async function getAuditEscrowAddress(daoAddress: string): Promise<any> {
   return response.json();
 }
 
+export async function getReviewerProfile(auditEscrowAddress: string, reviewerAddress: string) {
+  const response = await fetch(`${API_URL}/api/audit/${encodeURIComponent(auditEscrowAddress)}/reviewer-profile/${encodeURIComponent(reviewerAddress)}`);
+  return response.json();
+}
+
 export async function checkDAOReviewer(daoAddress: string, userAddress: string) {
   const response = await fetch(`${API_URL}/api/audit/dao/${encodeURIComponent(daoAddress)}/check-reviewer/${encodeURIComponent(userAddress)}`);
   return response.json();

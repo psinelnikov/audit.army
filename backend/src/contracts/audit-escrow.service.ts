@@ -241,5 +241,34 @@ export class AuditEscrowService {
       return false;
     }
   }
+
+  async getReviewerProfile(auditEscrowAddress: string, reviewerAddress: string): Promise<any> {
+    try {
+      this.logger.log(`Getting reviewer profile for ${reviewerAddress} from ${auditEscrowAddress}`);
+      
+      const escrow = this.getAuditEscrowContract(auditEscrowAddress);
+      
+      // Call getReviewerProfile and reviewerActiveReviews
+      const profile = await escrow.getReviewerProfile(reviewerAddress);
+      const activeReviews = await escrow.reviewerActiveReviews(reviewerAddress);
+      const defaultMax = await escrow.DEFAULT_MAX_CONCURRENT_REVIEWS();
+      
+      return {
+        reviewer: profile.reviewer,
+        activeReviews: Number(profile.activeReviews),
+        completedReviews: Number(profile.completedReviews),
+        reputation: Number(profile.reputation),
+        lastAssignment: Number(profile.lastAssignment),
+        isActive: profile.isActive,
+        maxConcurrentReviews: Number(profile.maxConcurrentReviews) || Number(defaultMax),
+        // Derived values for UI
+        atCapacity: Number(activeReviews) >= (Number(profile.maxConcurrentReviews) || Number(defaultMax)),
+        availableSlots: Math.max(0, (Number(profile.maxConcurrentReviews) || Number(defaultMax)) - Number(activeReviews))
+      };
+    } catch (error) {
+      this.logger.error(`Error getting reviewer profile: ${error.message}`);
+      throw error;
+    }
+  }
 }
 

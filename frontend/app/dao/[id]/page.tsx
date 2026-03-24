@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getAuditsByDAO, checkDAOReviewer, prepareAssignReview, claimReview } from '../../../lib/api';
+import { getAuditsByDAO, checkDAOReviewer, prepareAssignReview, claimReview, getReviewerProfile } from '../../../lib/api';
 import { ReviewerAllocationService, ReviewerAllocationStrategy } from '../../../lib/reviewer-allocation';
 import { TIME_CONSTANTS, TRANSACTION_WAIT_TIMES, API_ENDPOINTS, UI_CONSTANTS, AUDIT_STATUS, BADGE_COLORS } from '../../../lib/constants';
 import {
@@ -39,11 +39,23 @@ interface Audit {
   assignedReviewer?: string;
   amount: string;
   ipfsHash: string;
-  status: number; // 0=PENDING, 1=IN_REVIEW, 2=COMPLETED, etc.
+  status: number;
   createdAt: number;
   completedAt?: number;
   reviewerPaid: boolean;
   daoPaid: boolean;
+}
+
+interface ReviewerProfile {
+  reviewer: string;
+  activeReviews: number;
+  completedReviews: number;
+  reputation: number;
+  lastAssignment: number;
+  isActive: boolean;
+  maxConcurrentReviews: number;
+  atCapacity: boolean;
+  availableSlots: number;
 }
 
 export default function DAOProfilePage() {
@@ -63,6 +75,7 @@ export default function DAOProfilePage() {
   const [allocationStrategy, setAllocationStrategy] = useState<ReviewerAllocationStrategy>(ReviewerAllocationStrategy.SELF_ASSIGNMENT);
   const [allocationService] = useState(() => ReviewerAllocationService.getInstance());
   const [userAudits, setUserAudits] = useState<Audit[]>([]);
+  const [reviewerProfile, setReviewerProfile] = useState<ReviewerProfile | null>(null);
 
   useEffect(() => {
     fetchDAOProfile();
@@ -79,6 +92,7 @@ export default function DAOProfilePage() {
     if (dao && authState.isAuthenticated && authState.address) {
       fetchAudits();
       checkDAOReviewerStatus();
+      fetchReviewerProfile();
     } else if (dao) {
       fetchAudits(); // Still fetch audits for non-authenticated users
     }
@@ -193,6 +207,21 @@ export default function DAOProfilePage() {
       }
     } catch (error) {
       console.error('Error checking DAO reviewer status:', error);
+    }
+  };
+
+  const fetchReviewerProfile = async () => {
+    if (!dao || !authState.address) return;
+    
+    try {
+      const response = await getReviewerProfile(dao.auditEscrowAddress, authState.address);
+      if (response.success) {
+        setReviewerProfile(response.data.profile);
+      } else {
+        console.error('Failed to fetch reviewer profile:', response.error);
+      }
+    } catch (error) {
+      console.error('Error fetching reviewer profile:', error);
     }
   };
 
@@ -680,6 +709,32 @@ You will be automatically assigned when your turn comes in the rotation. Current
                       This strategy is automatically selected based on DAO size and complexity. DAO admins can configure allocation strategies in settings.
                     </p>
                   </div>
+
+                  {/* Capacity Warning */}
+                  {reviewerProfile && reviewerProfile.atCapacity && (
+                    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <span className="text-red-500 text-lg">⚠️</span>
+                        <div>
+                          <p className="text-sm font-semibold text-red-400">
+                            At Maximum Review Capacity
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            You have {reviewerProfile.activeReviews} active reviews (max: {reviewerProfile.maxConcurrentReviews}). 
+                            Complete an in-progress review before claiming new ones.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {reviewerProfile && !reviewerProfile.atCapacity && reviewerProfile.activeReviews > 0 && (
+                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-xs text-yellow-400">
+                        <strong>Active Reviews:</strong> {reviewerProfile.activeReviews} / {reviewerProfile.maxConcurrentReviews} slots used ({reviewerProfile.availableSlots} available)
+                      </p>
+                    </div>
+                  )}
                   
                   {getPendingAudits().length === 0 ? (
                     <p className="text-muted-foreground">No pending audits at this time.</p>
@@ -699,11 +754,12 @@ You will be automatically assigned when your turn comes in the rotation. Current
                                 <span className={`px-3 py-1 text-xs rounded-full font-medium ${BADGE_COLORS.PENDING}`}>PENDING</span>
                                 <Button
                                   onClick={() => handleClaimReview(audit.id.toString())}
-                                  disabled={assigningReview === audit.id.toString()}
+                                  disabled={assigningReview === audit.id.toString() || (reviewerProfile?.atCapacity ?? false)}
                                   className="block w-full bg-accent hover:bg-accent/90 text-xs camo-border"
                                   size="sm"
                                 >
-                                  {assigningReview === audit.id.toString() ? 'Processing...' : allocationService.getClaimButtonText(allocationStrategy)}
+                                  {assigningReview === audit.id.toString() ? 'Processing...' : 
+                                   reviewerProfile?.atCapacity ? 'At Capacity' : allocationService.getClaimButtonText(allocationStrategy)}
                                 </Button>
                               </div>
                             </div>

@@ -280,6 +280,25 @@ export class AuditController {
     }
   }
 
+  @Get(':auditEscrowAddress/reviewer-profile/:reviewerAddress')
+  async getReviewerProfile(
+    @Param('auditEscrowAddress') auditEscrowAddress: string,
+    @Param('reviewerAddress') reviewerAddress: string
+  ) {
+    try {
+      const profile = await this.auditEscrowService.getReviewerProfile(auditEscrowAddress, reviewerAddress);
+      return {
+        success: true,
+        data: { profile }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Failed to get reviewer profile'
+      };
+    }
+  }
+
   @Get(':auditId')
   async getAudit(@Param('auditId') auditId: string, @Query('auditEscrowAddress') auditEscrowAddress: string) {
     try {
